@@ -18,7 +18,7 @@
 		return count === length
 	}
 	var isDom = function (obj) { return obj instanceof Node }
-	var isObj = function (obj) { return obj && typeof obj === 'object' }
+	var isObj = function (obj) { var objType = typeof obj; return objType === 'object' || objType === 'function' }
 	var isStrOrNum = function (val) { var valType = typeof val; return valType === 'string' || valType === 'number' }
 	var isFn = function (val) { return typeof val === 'function' }
 	var c2d = function (str) { return str.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase() }
@@ -267,7 +267,7 @@
 		return children
 	}
 
-	setObserver = function (root, opts, realRoot) {
+	var setObserver = function (root, opts, realRoot) {
 		realRoot.observe = realRoot.observe || new Obs(realRoot)
 		realRoot.observe.add(root, opts)
 	}
@@ -283,8 +283,10 @@
 			for (var i = 0; i < obj.length; i++)
 				setChildren(root, obj[i], realRoot)
 		}
-		else if (typeof obj === 'function')
-			setChildren(root, obj(), realRoot)
+		else if (typeof obj === 'function') {
+			var c = obj()
+			setChildren(root, c, realRoot)
+		}
 		else {
 			var tag = obj.tag
 			if (tag) {
@@ -477,5 +479,9 @@
 		}
 		return el
 	}
-	return CreateElement
+	
+	var publicCreateElement = function (name, opts) {
+		return CreateElement(name, opts)
+	}
+	return publicCreateElement
 });

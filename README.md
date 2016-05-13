@@ -3,6 +3,7 @@ Helper to quickly build up dom in javascript object format
 
 Basic feature list:
 
+ * Just dom
  * Basic dom construction by javascript object format
  * Event
  * Template by function
@@ -37,8 +38,62 @@ var root = CreateElement('div', {
   }
 })
 ```
-##### Result
+###### Result
 ![alt tag](http://img.prntscr.com/img?url=http://i.imgur.com/XFBYYe4.png)
+
+#### Basic 2
+```javascript
+var outerScopeDataSource = [
+  { name: 'yellow' },
+  { name: 'green' },
+  { name: 'pink' }
+]
+var root = CreateElement('div', {
+  className: 'root',
+  parent: document.body,
+  width: 300,
+  height: 300,
+  background: 'darkgreen',
+  items: [
+    { tag: 'div', width: 50, height: 50, text: 'Intro', display: 'inline-block', background: 'yellowgreen',
+      items: [
+        function () {
+          return outerScopeDataSource.map(function (data) {
+            return { tag: 'custom-el', text: data.name }
+          })
+        }
+      ]
+    },
+    { tag: 'div', width: 200, background: 'lightgreen',
+      items: ['color', 'material'].map(function (val) {
+        return { tag: 'span', text: val }
+      })
+    }
+  ]
+})
+```
+###### Result
+![](http://img.prntscr.com/img?url=http://i.imgur.com/9XrH9HA.png)
+
+#### Attributes
+```javascript
+var root = CreateElement('div', {
+  className: 'root',
+  id: 'root',
+	parent: document.body,
+  width: 300,
+  height: 300,
+  background: 'darkgreen',
+  padding: 5,
+  attrs: {
+    class: 'original',
+    dataTooltip: 'helo this is tip',
+    'data-id': 5
+  }
+})
+```
+###### Result
+![alt tag](http://img.prntscr.com/img?url=http://i.imgur.com/WQP5QQ3.png)
 
 #### Reference
 ```javascript
@@ -60,15 +115,7 @@ var root = CreateElement('div', {
        },
       ]
     }
-  ],
-  created: function () {
-    // called when finished every setup
-  },
-  appended: function () {
-    // called when
-    // 1. element is root (created by CreateElement)
-    // 2. parent is Node and appended element successfully
-  }
+  ]
 })
 ```
 
@@ -164,7 +211,7 @@ var root = CreateElement('div', {
   }
 })
 ```
-#### Result
+###### Result
 ![](http://img.prntscr.com/img?url=http://i.imgur.com/aZVNQe8.png)
 
 #### Template with data change reaction
@@ -206,7 +253,7 @@ var root = CreateElement('div', {
               padding: 5,
               background: 'lightblue',
               text: sup.name + '. Time: ' + sup.time + ' days',
-              click: { scope: 'this', handler: 'onClickSupplier' }
+              click: { scope: 'root', handler: 'onClickSupplier' }
             }
           }
         }
