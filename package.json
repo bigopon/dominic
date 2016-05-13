@@ -1,0 +1,19 @@
+{
+	"name": "dominic",
+	"version": "0.1.3",
+	"description": "Helper to quickly build up simple DOM in simple javascript object format.",
+	"main": "dominic.js",
+	"scripts": {
+		"test": "test",
+		"minify": "uglifyjs dominic.js -o dominic.min.js -c dead_code,unused,booleans,loops,join_vars,drop_debugger,drop_console,sequences -m"
+	},
+	"keywords": [
+		"DOM",
+		"dom",
+		"helper",
+		"quickdom",
+		"dominic"
+	],
+	"author": "bigopon <bigopon.777@gmail.com> (http://bigopon.surge.sh)",
+	"license": "MIT"
+}
