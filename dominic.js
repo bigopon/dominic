@@ -306,22 +306,23 @@
 		else {
 			if (typeof obj === 'function') {
 				var c = obj()
+				if (injectOpts) assign3(c, injectOpts)
 				setChildren(root, c, realRoot, injectOpts)
 			}
 			else if (Array.isArray(obj)) {
 				for (var i = 0; i < obj.length; i++) {
 					var opts = obj[i]
 					if (injectOpts) assign3(opts, injectOpts)
-					setChildren(root, opts, realRoot)
+					setChildren(root, opts, realRoot, injectOpts)
 				}
 			}
 			else {
 				var tag = obj.tag
 				if (tag) {
 					delete obj.tag
-					if (injectOpts) assign3(opj, injectOpts)
+					if (injectOpts) assign3(obj, injectOpts)
 					var el = CreateElement(tag, obj, realRoot)
-					setChildren(root, el, realRoot)
+					setChildren(root, el, realRoot, injectOpts)
 				}
 				else if (obj.hasOwnProperty('for')) {
 					if (!isObj(obj.for)) return;
