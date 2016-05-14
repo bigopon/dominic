@@ -75,6 +75,37 @@ var root = CreateElement('div', {
 ###### Result
 ![](http://img.prntscr.com/img?url=http://i.imgur.com/9XrH9HA.png)
 
+#### Basic 3: Share configures
+```javascript
+var root = CreateElement('div', {
+    className: 'root',
+    parent: document.body,
+    width: '100%',
+    height: '100%',
+    defaults: {
+        display: 'inline-block',
+        height: '100%',
+        className: 'default-class',
+    },
+    items: [
+        { tag: 'div', className: 'sidebar', width: 200, ref: 'sidebar', background: 'lightgreen',
+    
+        },
+        { tag: 'div', className: 'main', width: 'calc(100% - 200px)', ref: 'main', background: 'lightblue',
+            items: [
+                
+            ]
+        },
+        { tag: 'test' }
+    ]
+})
+```
+* All children will have `display = 'inline-block', height = '100%'`
+* Only last child will have `class = 'default-class'`
+
+###### Result
+![](http://img.prntscr.com/img?url=http://i.imgur.com/Eg0I5Zi.png)
+
 #### Attributes
 ```javascript
 var root = CreateElement('div', {

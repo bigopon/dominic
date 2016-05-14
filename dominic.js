@@ -53,6 +53,19 @@
 		}
 		return dest
 	}
+	var assign3 = function (dest) {
+		dest = dest || {}
+		for (var i = 1; i < arguments.length; i++) {
+			var src = arguments[i]
+			var keys = Object.keys(arguments[i])
+			for (var j = 0; j < keys.length; j++) {
+				var key = keys[j]
+				if (!dest.hasOwnProperty(key))
+					dest[key] = src[key]
+			}
+		}
+		return dest
+	}
 	var toSelector = function (dom) {
 		var id = dom.id ? '#' + dom.id : ''
 		var clsStr = dom.classList.toString()
@@ -272,43 +285,49 @@
 		realRoot.observe.add(root, opts)
 	}
 
-	var setChildren = function (root, obj, realRoot) {
+	var setChildren = function (root, obj, realRoot, injectOpts) {
 		'use strict'
 		if (!isObj(obj)) return;
 		if (isDom(obj)) {
 			root.appendChild(obj)
             setRefs(root, obj, realRoot)
 		}
-		else if (Array.isArray(obj)) {
-			for (var i = 0; i < obj.length; i++)
-				setChildren(root, obj[i], realRoot)
-		}
-		else if (typeof obj === 'function') {
-			var c = obj()
-			setChildren(root, c, realRoot)
-		}
 		else {
-			var tag = obj.tag
-			if (tag) {
-				delete obj.tag
-				var el = CreateElement(tag, obj, realRoot)
-				setChildren(root, el, realRoot)
+			if (typeof obj === 'function') {
+				var c = obj()
+				setChildren(root, c, realRoot, injectOpts)
 			}
-			else if (obj.hasOwnProperty('for')) {
-				if (!isObj(obj.for)) return;
-				var cFromTpl = tpl2dom(root, obj, realRoot)
-				setChildren(root, cFromTpl, realRoot)
-				if (isObj(obj.update)) {
-					setObserver(root, obj, realRoot)
+			else if (Array.isArray(obj)) {
+				for (var i = 0; i < obj.length; i++) {
+					var opts = obj[i]
+					if (injectOpts) assign3(opts, injectOpts)
+					setChildren(root, obj[i], realRoot)
 				}
 			}
 			else {
-				var fn = obj.fn
-				if (typeof fn === 'function') {
-					var scope = obj.scope
-					var thisArg = scope === 'root' ? realRoot : (scope === 'parent' ? root : scope)
-					var children = fn.call(thisArg)
-					setChildren(root, children, realRoot)
+				var tag = obj.tag
+				if (tag) {
+					delete obj.tag
+					if (injectOpts) assign3(opj, injectOpts)
+					var el = CreateElement(tag, obj, realRoot)
+					setChildren(root, el, realRoot)
+				}
+				else if (obj.hasOwnProperty('for')) {
+					if (!isObj(obj.for)) return;
+					var cFromTpl = tpl2dom(root, obj, realRoot)
+					setChildren(root, cFromTpl, realRoot, injectOpts)
+					if (isObj(obj.update)) {
+						setObserver(root, obj, realRoot)
+					}
+				}
+				else {
+					var fn = obj.fn
+					if (typeof fn === 'function') {
+						var scope = obj.scope
+						var thisArg = scope === 'root' ? realRoot : (scope === 'parent' ? root : scope)
+						var children = fn.call(thisArg)
+						setChildren(root, children, realRoot, injectOpts)
+					}
 				}
 			}
 		}
@@ -377,10 +396,10 @@
 			el[prop] = (el[prop] + val).trim()
 		}
 	}
-	var setDelaySetups = function (el, setups, root) {
+	var setDelaySetups = function (el, setups, root, injectOpts) {
 		for (var i = 0, length = setups.length; i < length; i++) {
             var setup = setups[i]
-			setters['set' + setup.key](el, setup.val, root)
+			setters['set' + setup.key](el, setup.val, root, injectOpts)
         }
 	}
 	var setDelayEvts = function (el, events, root) {
@@ -397,11 +416,11 @@
 		else bool = condition
 		return Boolean(bool)
 	}
-	var directDimensionStyle = ['width', 'height', 'maxWidth', 'maxHeight', 'padding', 'margin']
-	var directDisplayStyle = ['color', 'backgroundColor', 'background', 'display', 'position', 'opacity']
-	var directStyleCheck = directDimensionStyle.concat(directDisplayStyle)
-	var fnConfigCheck = ['style', 'children', 'items', 'attrs', 'events']
-	var eventCfg = [
+	var dimensionStyle = ['width', 'height', 'maxWidth', 'maxHeight', 'padding', 'margin']
+	var displayStyle = ['color', 'backgroundColor', 'background', 'display', 'position', 'opacity']
+	var shareStyle = ['defaults']
+	var fnConfig = ['style', 'children', 'items', 'attrs', 'events']
+	var evtConfig = [
 		'click', 'mousedown', 'mouseup', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave',
 		'dragstart', 'dragend', 'drag', 'dragover', 'dragenter', 'dragout', 'drop',
 		'blur', 'focus',
@@ -414,21 +433,16 @@
 	var delayProps = ['className', 'id']
 	var delayTextProps = ['text', 'textContent']
 	var delayAppendTarget = ['parent']
-	var allChecks = directDimensionStyle.concat(directDisplayStyle, fnConfigCheck, eventCfg, delayCbProps, delayProps, delayTextProps, delayAppendTarget)
-	var dimensionStyleRange = directDimensionStyle.length
-	var directDisplayStyleRange = directDisplayStyle.length
-	var fnConfigCheckRange = fnConfigCheck.length
-	var eventCfgRange = eventCfg.length
-	var delayCbPropsRange = delayCbProps.length
-	var delayPropsRange = delayProps.length
+	var allChecks = dimensionStyle.concat(displayStyle, shareStyle, fnConfig, evtConfig, delayCbProps, delayProps, delayTextProps, delayAppendTarget)
 	
-	var dimensionMaxIdx = dimensionStyleRange
-	var directDisplayStyleMaxIdx = dimensionMaxIdx+ directDisplayStyleRange
-	var fnConfigMaxIdx = directDisplayStyleMaxIdx + fnConfigCheckRange
-	var eventCfgMaxIdx = fnConfigMaxIdx + eventCfgRange
-	var delayCbPropsMaxIdx = eventCfgMaxIdx + delayCbPropsRange
-	var delayPropsMaxIdx = delayCbPropsMaxIdx + delayPropsRange 
-	var delayTextPropsMaxIdx = delayPropsMaxIdx + delayTextProps.length
+	var dimRange = dimensionStyle.length
+	var disRange = dimRange + displayStyle.length
+	var shareRange = disRange + shareStyle.length
+	var fnRange = shareRange + fnConfig.length
+	var evtRange = fnRange + evtConfig.length
+	var cbRange = evtRange + delayCbProps.length
+	var propRange = cbRange + delayProps.length
+	var textRange = propRange + delayTextProps.length
 	
 	var CreateElement = function (name, attrs, root, data) {
 		attrs = attrs || fakeOpts
@@ -440,6 +454,7 @@
 		var delayCb
 		var delayProps
 		var delayRoot
+		var injectOpts
 		if (attrs.hasOwnProperty('if') && !evalIf(attrs.if)) return null
 		for (var i = 0, length = attributes.length; i < length; i++) {
 			var key = attributes[i]
@@ -448,26 +463,31 @@
 			if (keyIdx == -1)
 				el[key] = val
 			else {
-				if (keyIdx < directDisplayStyleMaxIdx)
-					el.style[key] = isNaN(val) ? val : (val < 1.0 ? val : (val + 'px'))
-				else if (keyIdx < fnConfigMaxIdx)
+				if (keyIdx < dimRange)
+					el.style[key] = isNaN(val) ? val : (val + 'px')
+				else if (keyIdx < disRange)
+					el.style[key] = val
+				else if (keyIdx < shareRange)
+					assign((injectOpts = injectOpts || {}), val)
+				else if (keyIdx < fnRange)
 					(delaySetups = delaySetups || []).push({ key: key, val: val })
-				else if (keyIdx < eventCfgMaxIdx)
+				else if (keyIdx < evtRange)
 					(delayEvts = delayEvts || []).push({ key: key, val: val })
-				else if (keyIdx < delayCbPropsMaxIdx)
+				else if (keyIdx < cbRange)
 					(delayCb = delayCb || {})[key] = val
-				else if (keyIdx < delayPropsMaxIdx)
+				else if (keyIdx < propRange)
 					(delayProps = delayProps || {})[key] = val
-				else if (keyIdx < delayTextPropsMaxIdx)
+				else if (keyIdx < textRange)
 					el.appendChild(document.createTextNode(val))
 				else
 					delayRoot = val
 			}
 		}
+		
 		if (delayProps)
 			setDelayProps(el, delayProps)
 		if (delaySetups)
-			setDelaySetups(el, delaySetups, root)
+			setDelaySetups(el, delaySetups, root, injectOpts)
 		if (delayEvts)
 			setDelayEvts(el, delayEvts, root)
 		if (delayCb && typeof delayCb.created === 'function')
