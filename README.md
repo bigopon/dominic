@@ -86,14 +86,29 @@ var root = CreateElement('div', {
         display: 'inline-block',
         height: '100%',
         className: 'default-class',
+        style: {
+            verticalAlign: 'top'
+        }
     },
     items: [
         { tag: 'div', className: 'sidebar', width: 200, ref: 'sidebar', background: 'lightgreen',
     
         },
         { tag: 'div', className: 'main', width: 'calc(100% - 200px)', ref: 'main', background: 'lightblue',
+            defaults: {
+                background: 'tomato',
+                margin: 5,
+                height: 50,
+                width: 50,
+                display: 'inline-block'
+            },
             items: [
-                
+                { tag: 'div', text: 1 },
+                { tag: 'div', text: 2 },
+                [3,4,5,6].map(function (v) { return { tag: 'div', text: v } }),
+                function () {
+                    return [5,6,7,8].map(function (v) { return { tag: 'div', text: v } })
+                }
             ]
         },
         { tag: 'test' }
@@ -104,7 +119,7 @@ var root = CreateElement('div', {
 * Only last child will have `class = 'default-class'`
 
 ###### Result
-![](http://img.prntscr.com/img?url=http://i.imgur.com/Eg0I5Zi.png)
+![](http://img.prntscr.com/img?url=http://i.imgur.com/o8Nt3GZ.png)
 
 #### Attributes
 ```javascript

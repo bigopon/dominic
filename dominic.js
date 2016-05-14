@@ -60,8 +60,15 @@
 			var keys = Object.keys(arguments[i])
 			for (var j = 0; j < keys.length; j++) {
 				var key = keys[j]
-				if (!dest.hasOwnProperty(key))
+				if (Array.isArray(dest)) {
+					for (k = 0; k < dest.length; k++)
+						if (!dest[k].hasOwnProperty(key))
+							dest[k][key] = src[key] 
+				}
+				else {
+					if (!dest.hasOwnProperty(key))
 					dest[key] = src[key]
+				}
 			}
 		}
 		return dest
@@ -285,6 +292,10 @@
 		realRoot.observe.add(root, opts)
 	}
 
+	var inject = function (opts, injectOpts) {
+		
+	}
+
 	var setChildren = function (root, obj, realRoot, injectOpts) {
 		'use strict'
 		if (!isObj(obj)) return;
@@ -301,7 +312,7 @@
 				for (var i = 0; i < obj.length; i++) {
 					var opts = obj[i]
 					if (injectOpts) assign3(opts, injectOpts)
-					setChildren(root, obj[i], realRoot)
+					setChildren(root, opts, realRoot)
 				}
 			}
 			else {
