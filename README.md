@@ -41,7 +41,7 @@ var root = CreateElement('div', {
 ###### Result
 ![alt tag](http://img.prntscr.com/img?url=http://i.imgur.com/XFBYYe4.png)
 
-#### Basic 2
+#### Basic 2: Function as item
 ```javascript
 var outerScopeDataSource = [
   { name: 'yellow' },
@@ -115,25 +115,69 @@ var root = CreateElement('div', {
     ]
 })
 ```
-* All children will have `display = 'inline-block', height = '100%'`
-* Only last child will have `class = 'default-class'`
+* All direct children of root will have `display = 'inline-block', height = '100%'`
+* Only last child of root will have `class = 'default-class'`
 
 ###### Result
 ![](http://img.prntscr.com/img?url=http://i.imgur.com/o8Nt3GZ.png)
+
+#### Basic 4: Condition `if`/ `hide`
+```javascript
+var root = CreateElement('div', {
+  className: 'root',
+  parent: document.body,
+  width: '100%',
+  height: '100%',
+  defaults: {
+    display: 'inline-block',
+    height: '100%',
+    className: 'default-class',
+    style: {
+      verticalAlign: 'top'
+    }
+  },
+  items: [
+    { tag: 'div', className: 'sidebar', width: 200, ref: 'sidebar', background: 'lightgreen' },
+    { tag: 'div', className: 'main',
+      width: 'calc(100% - 200px)',
+      ref: 'main',
+      background: 'lightblue',
+      defaults: {
+        background: 'tomato',
+        margin: 5,
+        height: 50,
+        width: 50,
+        display: 'inline-block'
+      },
+      items: [
+        { tag: 'div', text: 'First' },
+        { tag: 'div', text: 'Second' },
+        [3,4,5,6].map(function (v, i) { return { tag: 'div', text: 'Value is: ' + v, if: v < 4 } }),
+        function () {
+          return [5,6,7,8].map(function (v, i) { return { tag: 'div', text: v, hide: v > 6 } })
+        }
+      ]
+    }
+  ]
+})
+```
+###### Result
+![](http://img.prntscr.com/img?url=http://i.imgur.com/poLwTtM.png)
+
 
 #### Attributes
 ```javascript
 var root = CreateElement('div', {
   className: 'root',
   id: 'root',
-	parent: document.body,
+  parent: document.body,
   width: 300,
   height: 300,
   background: 'darkgreen',
   padding: 5,
   attrs: {
     class: 'original',
-    dataTooltip: 'helo this is tip',
+    dataTooltip: 'halo this is tip',
     'data-id': 5
   }
 })
@@ -151,12 +195,12 @@ var root = CreateElement('div', {
   background: 'darkgreen',
   items: [
     { tag: 'div', width: 50, height: 50, text: 'Intro', display: 'inline-block', background: 'yellowgreen' },
-    { tag: 'div', width: 200, background: 'lightgreen',
+    { tag: 'div', width: 200, background: 'lightgreen', ref: 'orange',
       items: [
        { tag: 'div', width: 20, height: 20, background: 'red',
          ref: 'lightgreen' // access by root.refs.lightgreen
        },
-       { tag: 'div', width: 20, height: 20, background: 'orange', ref: 'orange',
+       { tag: 'div', width: 20, height: 20, background: 'orange',
          ref: 'orange', refScope: 'parent' // access by root.refs.orange.refs.orange
        },
       ]
@@ -166,6 +210,15 @@ var root = CreateElement('div', {
 ```
 
 #### Events
+Reserved keyword for events:
+* Mouse: `click` `mousedown` `mouseup` `mouseover` `mouseout` `mouseenter` `mouseleave`
+* Drag: `dragstart` `dragend` `drag` `dragover` `dragenter` `dragout` `drop`
+* Focus: `blur` `focus` 
+* Keyboard: `keydown` `keypress` `keyup`
+* Form: `change` `input` `submit`
+* Touch: `touchstart` `touchmove` `touchend`
+* Scroll: `wheel` `scroll`
+
 ```javascript
 var root = CreateElement('div', {
   className: 'root',
@@ -201,6 +254,8 @@ var root = CreateElement('div', {
        { tag: 'div', className: 'yellow', width: 20, height: 20, background: 'yellow',
          click: {
            scope: 'root',
+           // Will look up for `onClickYellow` on root element
+           // Throw error if not found
            handler: 'onClickYellow',
            capture: true
          }
@@ -222,6 +277,11 @@ var root = CreateElement('div', {
 ```
 
 #### Template
+1. `for`: data source
+2. `TplFn`: function (item, itemIndex)
+* If data source provided is an array, item is record of array and itemIndex is record index
+* If data source provided is an object, item is data object and itemIndex will be undefined
+
 ```javascript
 var root = CreateElement('div', {
   className: 'root',
@@ -241,7 +301,7 @@ var root = CreateElement('div', {
           { name: 'US', time: 5 },
           { name: 'UK', time: 4 }
         ]}
-	  }
+      }
     ],
     tplFn: function (item, itemIdx) {
       return { tag: 'div', text: item.name, padding: 5, margin: '5px 0 0 5px', background: 'tomato',
@@ -249,7 +309,11 @@ var root = CreateElement('div', {
           for: item.suppliers,
 		  root: 'data', // specify which property to look for data
           tplFn: function (sup, supIdx) {
-            return { tag: 'div', padding: 5, background: 'lightblue', text: sup.name + '. Time: ' + sup.time + ' days' }
+            return { tag: 'div',
+              padding: 5,
+              background: 'lightblue',
+              text: sup.name + '. Time: ' + sup.time + ' days'
+            }
           }
         }
       }
@@ -283,7 +347,6 @@ var root = CreateElement('div', {
   items: {
     // data source
     for: null,
-    // 
     update: {
       // update this when root.observe.data = src
       observeProp: 'data'
@@ -292,7 +355,7 @@ var root = CreateElement('div', {
       return { tag: 'div', text: item.name, padding: 5, margin: '5px 0 0 5px', background: 'tomato',
         items: {
           for: item.suppliers,
-		  root: 'data', // specify which property to look for data
+          root: 'data', // specify which property to look for data
           tplFn: function (sup, supIdx) {
             return {
               tag: 'div',
@@ -331,11 +394,21 @@ npm i dominic
 ```
 
 ## API
+
+1. Create new DOM element
 ```javascript
 CreateElement(name, opts)
 name: String
 opts: Object
+return: DOM element
 ```
+2. `For Node:` Change global window object
+```javascript
+CreateElement.setWindow(windowObj)
+```
+* window obj must have:
+1. Node class with same behavior of a normal HTML element (`appendChild`, `removeChild`, `etc...`)
+2. document with `createElement`, `createTextNode` methods which will create Node or TextNode
 
 ## Plan
 - [ ] Support server side rendering (to Html string)

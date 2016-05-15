@@ -6,6 +6,7 @@
 	else
 		root.CreateElement = factory();
 })(this, function () {
+	var win = window
 	var fakeArray = []
 	var fakeOpts = {}
 	var fakeObj = fakeOpts
@@ -17,7 +18,7 @@
 			count += (typeof objs[i] === type ? 1 : 0)
 		return count === length
 	}
-	var isDom = function (obj) { return obj instanceof Node }
+	var isDom = function (obj) { return obj instanceof win.Node }
 	var isObj = function (obj) { var objType = typeof obj; return objType === 'object' || objType === 'function' }
 	var isStrOrNum = function (val) { var valType = typeof val; return valType === 'string' || valType === 'number' }
 	var isFn = function (val) { return typeof val === 'function' }
@@ -91,7 +92,7 @@
 
 	var HandleEvent = function (type, opts, thisArg) {
 		opts = opts || {}
-		var el = opts.el || document.documentElement
+		var el = opts.el || win.document.documentElement
 		var callback = opts.callback
 		var capture = opts.capture || false
 		var delegate = opts.delegate
@@ -458,7 +459,7 @@
 	
 	var CreateElement = function (name, attrs, root, data) {
 		attrs = attrs || fakeOpts
-		var el = document.createElement(name)
+		var el = win.document.createElement(name)
 		root = root || el
 		var attributes = Object.keys(attrs)
 		var delaySetups
@@ -467,7 +468,9 @@
 		var delayProps
 		var delayRoot
 		var injectOpts
+		var delayNoDisplay
 		if (attrs.hasOwnProperty('if') && !evalIf(attrs.if)) return null
+		if (attrs.hasOwnProperty('hide') && evalIf(attrs.hide)) delayNoDisplay = true
 		for (var i = 0, length = attributes.length; i < length; i++) {
 			var key = attributes[i]
 			var val = attrs[key]
@@ -490,7 +493,7 @@
 				else if (keyIdx < propRange)
 					(delayProps = delayProps || {})[key] = val
 				else if (keyIdx < textRange)
-					el.appendChild(document.createTextNode(val))
+					el.appendChild(win.document.createTextNode(val))
 				else
 					delayRoot = val
 			}
@@ -509,11 +512,21 @@
 			if (delayCb && typeof delayCb.appended === 'function')
 				delayCb.appended.call(el, delayRoot)
 		}
+		if (delayNoDisplay)
+			el.style.display = 'none'
 		return el
 	}
 	
 	var publicCreateElement = function (name, opts) {
 		return CreateElement(name, opts)
 	}
+	/**
+	 * @Description set up window object for usage in non browser environment
+	 * the Object should have document and Node that mimic document and Node of browser
+	 */
+	publicCreateElement.setWindow = function (obj) {
+		win = obj
+	}
+	
 	return publicCreateElement
 });
