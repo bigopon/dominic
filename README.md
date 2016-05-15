@@ -7,6 +7,7 @@ Basic feature list:
  * Basic dom construction by javascript object format
  * Event
  * Template by function
+ * Server side render to Html (with helper, see API)
 
 
 And here's some code! :+1:
@@ -407,8 +408,21 @@ return: DOM element
 CreateElement.setWindow(windowObj)
 ```
 * window obj must have:
-1. Node class with same behavior of a normal HTML element (`appendChild`, `removeChild`, `etc...`)
-2. document with `createElement`, `createTextNode` methods which will create Node or TextNode
+- Node class with same behavior of a normal HTML element (`appendChild`, `removeChild`, `etc...`)
+- document with `createElement`, `createTextNode` methods which will create Node or TextNode
+* Suggestion: `fakecument`: `npm i fakecument`
+```javascript
+var windowObj = require('fakecument')
+CreateElement.setWindow(windowObj)
+var root = CreateElement('div', {
+  className: 'abcd',
+  children: [
+    { tag: 'div', text: 'hello' }
+  ]
+})
+console.log('' + root)
+// <div class="abcd"><div>hello</div></div>
+```
 
 ## Plan
 - [ ] Support server side rendering (to Html string)
