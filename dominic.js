@@ -1,4 +1,4 @@
-(function(root, factory) {
+(function (root, factory) {
 	if (typeof define === 'function' && define.amd)
 		define([], factory);
 	else if (typeof exports === 'object')
@@ -6,7 +6,13 @@
 	else
 		root.CreateElement = factory();
 })(this, function () {
+	/**
+	 * @Reservered local variable name
+	 */
 	var win = window
+	var doc = win.document
+	var Node = win.Node
+
 	var fakeArray = []
 	var fakeOpts = {}
 	var fakeObj = fakeOpts
@@ -18,7 +24,7 @@
 			count += (typeof objs[i] === type ? 1 : 0)
 		return count === length
 	}
-	var isDom = function (obj) { return obj instanceof win.Node }
+	var isDom = function (obj) { return obj instanceof Node }
 	var isObj = function (obj) { var objType = typeof obj; return objType === 'object' || objType === 'function' }
 	var isStrOrNum = function (val) { var valType = typeof val; return valType === 'string' || valType === 'number' }
 	var isFn = function (val) { return typeof val === 'function' }
@@ -64,11 +70,11 @@
 				if (Array.isArray(dest)) {
 					for (k = 0; k < dest.length; k++)
 						if (!dest[k].hasOwnProperty(key))
-							dest[k][key] = src[key] 
+							dest[k][key] = src[key]
 				}
 				else {
 					if (!dest.hasOwnProperty(key))
-					dest[key] = src[key]
+						dest[key] = src[key]
 				}
 			}
 		}
@@ -92,7 +98,7 @@
 
 	var HandleEvent = function (type, opts, thisArg) {
 		opts = opts || {}
-		var el = opts.el || win.document.documentElement
+		var el = opts.el || doc.documentElement
 		var callback = opts.callback
 		var capture = opts.capture || false
 		var delegate = opts.delegate
@@ -103,7 +109,7 @@
 				var match = walkUpAndFindMatch(/* destination */el, /* current */ event.target, /* selector */ delegate);
 				// var target = el.querySelector(delegate)
 				// if (!target || !event.target.contains(target)) return;
-				
+
 				// var target = event.target
 				// if (!target.matches(delegate)) return;
 				if (!match) return;
@@ -129,10 +135,10 @@
 		return handler
 	}
 
-	
+
 	var defProps = Object.defineProperties
 	var defProp = Object.defineProperty
-	
+
 	var Evt = (function () {
 		var Evt = function () {
 			Array.call(this)
@@ -160,7 +166,7 @@
 					var _this = this
 					var result = []
 					this.forEach(function (e) {
-						if ((type === '*' || e.type === type) && (el === '*' || e.el === el) && (!capture || e.capture === capture ))
+						if ((type === '*' || e.type === type) && (el === '*' || e.el === el) && (!capture || e.capture === capture))
 							result.push(e)
 					})
 					result.forEach(function (e) {
@@ -197,7 +203,7 @@
 						}
 					}
 					return successCount == refKeys.length
-				}	
+				}
 			},
 			removeRef: {
 				value: function (refName) {
@@ -228,7 +234,7 @@
 		defProps(Obs.prototype, {
 			add: {
 				value: function (root, opts) {
-					var obsProp = opts.update ? opts.update.observeProp : '' 
+					var obsProp = opts.update ? opts.update.observeProp : ''
 					if (!obsProp || obsProp === '__owner' || !isStrOrNum(obsProp)) return false
 					var cacheOpt = assign2({}, opts, { appendTo: root, obsProp: obsProp }, 'tplFn,for,root,appendTo,obsProp,update')
 					defProp(this, obsProp, {
@@ -267,7 +273,7 @@
 		var oldKeys = Object.keys(oldData)
 		var newKeys = Object.keys(newData)
 		if (oldKeys.join('') !== newKeys.join('')) return true
-		
+
 	}
 
 	var tpl2dom = function (root, opts, realRoot) {
@@ -294,7 +300,7 @@
 	}
 
 	var inject = function (opts, injectOpts) {
-		
+
 	}
 
 	var setChildren = function (root, obj, realRoot, injectOpts) {
@@ -302,7 +308,7 @@
 		if (!isObj(obj)) return;
 		if (isDom(obj)) {
 			root.appendChild(obj)
-            setRefs(root, obj, realRoot)
+						setRefs(root, obj, realRoot)
 		}
 		else {
 			if (typeof obj === 'function') {
@@ -400,7 +406,7 @@
 		setchildren: setChildren,
 		setitems: setChildren
 	}
-	
+
 	var setDelayProps = function (el, props) {
 		var propNames = Object.keys(props), length = propNames.length
 		for (var i = 0; i < length; i++) {
@@ -411,18 +417,18 @@
 	}
 	var setDelaySetups = function (el, setups, root, injectOpts) {
 		for (var i = 0, length = setups.length; i < length; i++) {
-            var setup = setups[i]
+			var setup = setups[i]
 			setters['set' + setup.key](el, setup.val, root, injectOpts)
-        }
+		}
 	}
 	var setDelayEvts = function (el, events, root) {
 		for (var i = 0, length = events.length; i < length; i++) {
 			var evt = events[i]
-			var evtArgs = assign({}, {type: evt.key}, evt.val)
+			var evtArgs = assign({}, { type: evt.key }, evt.val)
 			attachEvent(el, evtArgs, root)
 		}
 	}
-	
+
 	var evalIf = function (condition) {
 		var bool
 		if (typeof condition === 'function') bool = condition()
@@ -434,7 +440,7 @@
 	var shareStyle = ['defaults']
 	var fnConfig = ['style', 'children', 'items', 'attrs', 'events']
 	var evtConfig = [
-		'click', 'mousedown', 'mouseup', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave',
+		'click', 'mousedown', 'mouseup', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave', 'mousemove',
 		'dragstart', 'dragend', 'drag', 'dragover', 'dragenter', 'dragout', 'drop',
 		'blur', 'focus',
 		'keydown', 'keypress', 'keyup',
@@ -447,7 +453,7 @@
 	var delayTextProps = ['text', 'textContent']
 	var delayAppendTarget = ['parent']
 	var allChecks = dimensionStyle.concat(displayStyle, shareStyle, fnConfig, evtConfig, delayCbProps, delayProps, delayTextProps, delayAppendTarget)
-	
+
 	var dimRange = dimensionStyle.length
 	var disRange = dimRange + displayStyle.length
 	var shareRange = disRange + shareStyle.length
@@ -456,10 +462,10 @@
 	var cbRange = evtRange + delayCbProps.length
 	var propRange = cbRange + delayProps.length
 	var textRange = propRange + delayTextProps.length
-	
+
 	var CreateElement = function (name, attrs, root, data) {
 		attrs = attrs || fakeOpts
-		var el = win.document.createElement(name)
+		var el = doc.createElement(name)
 		root = root || el
 		var attributes = Object.keys(attrs)
 		var delaySetups
@@ -493,12 +499,12 @@
 				else if (keyIdx < propRange)
 					(delayProps = delayProps || {})[key] = val
 				else if (keyIdx < textRange)
-					el.appendChild(win.document.createTextNode(val))
+					el.appendChild(doc.createTextNode(val))
 				else
 					delayRoot = val
 			}
 		}
-		
+
 		if (delayProps)
 			setDelayProps(el, delayProps)
 		if (delaySetups)
@@ -516,7 +522,7 @@
 			el.style.display = 'none'
 		return el
 	}
-	
+
 	var publicCreateElement = function (name, opts) {
 		return CreateElement(name, opts)
 	}
@@ -526,7 +532,9 @@
 	 */
 	publicCreateElement.setWindow = function (obj) {
 		win = obj
+		doc = win.document
+		Node = win.Node
 	}
-	
+
 	return publicCreateElement
 });

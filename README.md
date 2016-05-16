@@ -212,7 +212,7 @@ var root = CreateElement('div', {
 
 #### Events
 Reserved keyword for events:
-* Mouse: `click` `mousedown` `mouseup` `mouseover` `mouseout` `mouseenter` `mouseleave`
+* Mouse: `click` `mousedown` `mouseup` `mouseover` `mouseout` `mouseenter` `mouseleave` `mousemove`
 * Drag: `dragstart` `dragend` `drag` `dragover` `dragenter` `dragout` `drop`
 * Focus: `blur` `focus` 
 * Keyboard: `keydown` `keypress` `keyup`
