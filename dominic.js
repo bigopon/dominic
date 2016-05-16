@@ -9,7 +9,7 @@
 	/**
 	 * @Reservered local variable name
 	 */
-	var win = window
+	var win = window || {}
 	var doc = win.document
 	var Node = win.Node
 
