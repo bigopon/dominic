@@ -14,7 +14,7 @@ And here's some code! :+1:
 
 #### Basic
 ```javascript
-var root = CreateElement('div', {
+var root = Dominic.createElement('div', {
   className: 'root',
   parent: document.body,
   width: 300,
@@ -49,7 +49,7 @@ var outerScopeDataSource = [
   { name: 'green' },
   { name: 'pink' }
 ]
-var root = CreateElement('div', {
+var root = Dominic.createElement('div', {
   className: 'root',
   parent: document.body,
   width: 300,
@@ -78,7 +78,7 @@ var root = CreateElement('div', {
 
 #### Basic 3: Share configures
 ```javascript
-var root = CreateElement('div', {
+var root = Dominic.createElement('div', {
     className: 'root',
     parent: document.body,
     width: '100%',
@@ -124,7 +124,7 @@ var root = CreateElement('div', {
 
 #### Basic 4: Condition `if`/ `hide`
 ```javascript
-var root = CreateElement('div', {
+var root = Dominic.createElement('div', {
   className: 'root',
   parent: document.body,
   width: '100%',
@@ -168,7 +168,7 @@ var root = CreateElement('div', {
 
 #### Attributes
 ```javascript
-var root = CreateElement('div', {
+var root = Dominic.createElement('div', {
   className: 'root',
   id: 'root',
   parent: document.body,
@@ -188,7 +188,7 @@ var root = CreateElement('div', {
 
 #### Reference
 ```javascript
-var root = CreateElement('div', {
+var root = Dominic.createElement('div', {
   className: 'root',
   parent: document.body,
   width: 300,
@@ -221,7 +221,7 @@ Reserved keyword for events:
 * Scroll: `wheel` `scroll`
 
 ```javascript
-var root = CreateElement('div', {
+var root = Dominic.createElement('div', {
   className: 'root',
   id: 'root',
   parent: document.body,
@@ -284,7 +284,7 @@ var root = CreateElement('div', {
 * If data source provided is an object, item is data object and itemIndex will be undefined
 
 ```javascript
-var root = CreateElement('div', {
+var root = Dominic.createElement('div', {
   className: 'root',
   id: 'root',
   parent: document.body,
@@ -337,7 +337,7 @@ var src = [
     ]}
   }
 ]
-var root = CreateElement('div', {
+var root = Dominic.createElement('div', {
   className: 'root',
   id: 'root',
   parent: document.body,
@@ -398,23 +398,27 @@ npm i dominic
 
 1. Create new DOM element
 ```javascript
-CreateElement(name, opts)
-name: String
-opts: Object
-return: DOM element
+/**
+ * @param {String} name tag name of the root dom element
+ * @param {Object} opts options for root element, className, id, children etc... 
+ * @return {DOM}
+ */
+Dominic.createElement(name, opts)
 ```
 2. `For Node:` Change global window object
 ```javascript
-CreateElement.setWindow(windowObj)
+Dominic.setWindow(windowObj)
 ```
 * window obj must have:
 - Node class with same behavior of a normal HTML element (`appendChild`, `removeChild`, `etc...`)
 - document with `createElement`, `createTextNode` methods which will create Node or TextNode
 * Suggestion: `fakecument`: `npm i fakecument`
 ```javascript
-var windowObj = require('fakecument')
-CreateElement.setWindow(windowObj)
-var root = CreateElement('div', {
+var fakecument = require('fakecument')
+var Dominic = require('dominic')
+
+Dominic.setWindow(fakecument)
+var root = Dominic.createElement('div', {
   className: 'abcd',
   children: [
     { tag: 'div', text: 'hello' }

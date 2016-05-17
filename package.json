@@ -1,19 +1,25 @@
 {
-	"name": "dominic",
-	"version": "0.1.12",
-	"description": "Helper to quickly build up DOM in simple javascript object format.",
-	"main": "dominic.js",
-	"scripts": {
-		"test": "test",
-		"minify": "uglifyjs dominic.js -o dominic.min.js -c dead_code,unused,booleans,loops,join_vars,drop_debugger,drop_console,sequences -m"
-	},
-	"keywords": [
-		"DOM",
-		"dom",
-		"helper",
-		"quickdom",
-		"dominic"
-	],
-	"author": "bigopon <bigopon.777@gmail.com> (http://bigopon.surge.sh)",
-	"license": "MIT"
+  "name": "dominic",
+  "version": "0.1.14",
+  "description": "Helper to quickly build up DOM in simple javascript object format.",
+  "main": "dominic.js",
+  "scripts": {
+    "test": "test",
+    "beautify": "uglifyjs dominic.js -o dist/dominic.js -b space-colon=true,semicolons=false,quote_style=1,indent-level=4",
+    "minify": "uglifyjs dominic.js -o dist/dominic.min.js -c dead_code,unused,booleans,loops,join_vars,drop_debugger,drop_console,sequences -m",
+    "output": "npm run beautify && npm run minify"
+  },
+  "keywords": [
+    "DOM",
+    "dom",
+    "helper",
+    "quickdom",
+    "dominic"
+  ],
+  "author": "bigopon <bigopon.777@gmail.com> (http://bigopon.surge.sh)",
+  "license": "MIT",
+  "repository": {
+    "url": "bigopon/dominic",
+    "type": "git"
+  }
 }
