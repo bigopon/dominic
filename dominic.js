@@ -1,3 +1,3 @@
-var Dominic = require('lib/index')
+var Dominic = require('./lib/index')
 
 module.exports = Dominic
