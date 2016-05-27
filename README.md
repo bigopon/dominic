@@ -379,6 +379,16 @@ var root = Dominic.createElement('div', {
     }}
   ]
 })
+
+// first change
+root.observe.data = src
+// add more value
+root.observe.push('data', { name: 'mangox', cost: 0.5, suppliers: {
+  data: [
+    { name: 'Russia', time: 4 },
+    { name: 'China', time: 5 }
+  ]
+}})
 ```
 
 ## Motivation
@@ -429,7 +439,7 @@ console.log('' + root)
 ```
 
 ## Plan
-- [ ] Support server side rendering (to Html string)
+- [x] Support server side rendering (to Html string)
 - [ ] Proper event delegation with CSS selector (Working but not nice)
 
 ## License

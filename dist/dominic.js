@@ -217,7 +217,15 @@
     var Obs = function() {
         var Obs = function(realRoot) {
             if (typeof realRoot === 'undefined') throw new Error('No root provided');
-            this.__owner = realRoot;
+            defProps(this, {
+                __owner: {
+                    value: realRoot
+                },
+                __data: {
+                    value: {},
+                    writable: true
+                }
+            });
         };
         Obs.prototype = Object.create(Object.prototype);
         defProps(Obs.prototype, {
@@ -229,15 +237,20 @@
                         appendTo: root,
                         obsProp: obsProp
                     }, 'tplFn,for,root,appendTo,obsProp,update');
+                    var prefix = Math.random().toString();
                     defProp(this, obsProp, {
+                        get: function() {
+                            return this.__data[prefix + obsProp];
+                        },
                         set: function(val) {
+                            this.__data[prefix + obsProp] = val;
                             cacheOpt.for = val;
                             while (root.firstChild) {
                                 var removedChild = root.removeChild(root.firstChild);
-                                this.__owner.evts.remove(function(evt) {
+                                if (this.__owner.evts) this.__owner.evts.remove(function(evt) {
                                     return removedChild.contains(evt.el);
                                 });
-                                this.__owner.refs.remove(function(el, ref) {
+                                if (this.__owner.refs) this.__owner.refs.remove(function(el, ref) {
                                     return removedChild === el || removedChild.contains(el);
                                 });
                             }
@@ -245,6 +258,16 @@
                             setChildren(root, newCFromTpl, this.__owner);
                         }
                     });
+                }
+            },
+            push: {
+                value: function(key, data) {
+                    key = '' + key;
+                    var existingVal = this[key];
+                    if (!existingVal || !Array.isArray(existingVal)) throw new Error('Value for property [' + key + '] is not an array.');
+                    if (Array.isArray(data)) for (var i = 0; i < data.length; i++) existingVal.push(data[i]); else existingVal.push(data);
+                    this[key] = existingVal;
+                    return existingVal.length;
                 }
             }
         });
@@ -266,6 +289,7 @@
     };
     var tpl2dom = function(root, opts, realRoot) {
         var val = opts.for;
+        if (!val) return null;
         var valRoot = opts.root || '';
         var data = valRoot ? val[valRoot] : val;
         var fn = opts['tplFn'];
@@ -302,7 +326,6 @@
                 }
             } else {
                 if (obj.hasOwnProperty('for')) {
-                    if (!isObj(obj.for)) return;
                     var cFromTpl = tpl2dom(root, obj, realRoot);
                     setChildren(root, cFromTpl, realRoot, injectOpts);
                     if (isObj(obj.update)) {
