@@ -432,7 +432,7 @@
         if (typeof condition === 'function') bool = condition(); else bool = condition;
         return Boolean(bool);
     };
-    var dimensionStyle = [ 'width', 'height', 'maxWidth', 'maxHeight', 'padding', 'margin' ];
+    var dimensionStyle = [ 'width', 'height', 'minWidth', 'minHeight', 'maxWidth', 'maxHeight', 'padding', 'margin' ];
     var displayStyle = [ 'color', 'backgroundColor', 'background', 'display', 'position', 'border', 'transform', 'opacity', 'fontSize' ];
     var shareStyle = [ 'defaults' ];
     var fnConfig = [ 'style', 'children', 'items', 'attrs', 'events' ];

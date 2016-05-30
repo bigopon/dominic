@@ -43,7 +43,9 @@ var root = Dominic.createElement('div', {
 ![alt tag](http://img.prntscr.com/img?url=http://i.imgur.com/XFBYYe4.png)
 
 ###### Styling
-* Only `width`, `height`, `margin`, `padding`, `minHeight`, `maxHeight`,  `minWidth`, `maxWidth` will be converted to proper CSS value if value is number
+* `width`, `height`, `minHeight`, `maxHeight`,  `minWidth`, `maxWidth`
+* `margin`, `padding`, `margin` and `padding` + `(Top - Left - Right - Bottom)`
+ will be converted to proper CSS value if value is number
 
 #### Basic 2: Function as item & div all the elements
 * Tag name is 'div' by default
