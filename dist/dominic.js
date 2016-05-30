@@ -96,7 +96,7 @@
         return selector;
     };
     var walkUpAndFindMatch = function(dest, current, selector) {
-        while (current !== dest) {
+        while (current && current !== dest) {
             if (current.matches(selector)) return current;
             current = current.parentNode;
         }
@@ -110,6 +110,7 @@
         var delegate = opts.delegate;
         var current = null;
         var handler = function(event) {
+            var el = event.currentTarget;
             if (typeof delegate === 'string') {
                 if (el === event.target) return;
                 var match = walkUpAndFindMatch(el, event.target, delegate);
@@ -214,6 +215,14 @@
         });
         return Refs;
     }();
+    var setRefs = function(root, el, realRoot) {
+        var ref = el.ref;
+        if (!isStrOrNum(ref)) return;
+        var refScope = el.refScope;
+        var scope = refScope === 'parent' ? root : realRoot;
+        scope.refs = scope.refs || new Refs();
+        scope.refs[ref] = el;
+    };
     var Obs = function() {
         var Obs = function(realRoot) {
             if (typeof realRoot === 'undefined') throw new Error('No root provided');
@@ -222,41 +231,46 @@
                     value: realRoot
                 },
                 __data: {
-                    value: {},
-                    writable: true
+                    value: {}
                 }
             });
         };
         Obs.prototype = Object.create(Object.prototype);
+        function areDifferent(oldData, newData) {
+            var diff = false;
+            var oldKeys = Object.keys(oldData);
+            var newKeys = Object.keys(newData);
+            if (oldKeys.join('') !== newKeys.join('')) return true;
+        }
         defProps(Obs.prototype, {
             add: {
-                value: function(root, opts) {
+                value: function(root, opts, injectOpts) {
                     var obsProp = opts.update ? opts.update.observeProp : '';
                     if (!obsProp || obsProp === '__owner' || !isStrOrNum(obsProp)) return false;
-                    var cacheOpt = assign2({}, opts, {
-                        appendTo: root,
+                    var defaultOpts = assign({}, injectOpts);
+                    var cacheOpts = assign2({}, opts, {
                         obsProp: obsProp
-                    }, 'tplFn,for,root,appendTo,obsProp,update');
-                    var prefix = Math.random().toString();
+                    }, 'tplFn,for,root,obsProp,update');
                     defProp(this, obsProp, {
                         get: function() {
-                            return this.__data[prefix + obsProp];
+                            return this.__data[obsProp];
                         },
-                        set: function(val) {
-                            this.__data[prefix + obsProp] = val;
-                            cacheOpt.for = val;
+                        set: function(root, cacheOpts, defaultOpts, val) {
+                            var obsProp = cacheOpts.obsProp;
+                            this.__data[obsProp] = val;
+                            cacheOpts.for = val;
                             while (root.firstChild) {
                                 var removedChild = root.removeChild(root.firstChild);
                                 if (this.__owner.evts) this.__owner.evts.remove(function(evt) {
-                                    return removedChild.contains(evt.el);
+                                    return removedChild === evt.el || removedChild.contains(evt.el);
                                 });
                                 if (this.__owner.refs) this.__owner.refs.remove(function(el, ref) {
                                     return removedChild === el || removedChild.contains(el);
                                 });
                             }
-                            var newCFromTpl = tpl2dom(root, cacheOpt, this.__owner);
-                            setChildren(root, newCFromTpl, this.__owner);
-                        }
+                            var newCFromTpl = tpl2dom(root, cacheOpts, this.__owner);
+                            setChildren(root, newCFromTpl, this.__owner, defaultOpts);
+                        }.bind(this, root, cacheOpts, defaultOpts)
                     });
                 }
             },
@@ -273,20 +287,6 @@
         });
         return Obs;
     }();
-    var setRefs = function(root, el, realRoot) {
-        var ref = el.ref;
-        if (!isStrOrNum(ref)) return;
-        var refScope = el.refScope;
-        var scope = refScope === 'parent' ? root : realRoot;
-        scope.refs = scope.refs || new Refs();
-        scope.refs[ref] = el;
-    };
-    var isDifferent = function(oldData, newData) {
-        var isDiff = false;
-        var oldKeys = Object.keys(oldData);
-        var newKeys = Object.keys(newData);
-        if (oldKeys.join('') !== newKeys.join('')) return true;
-    };
     var tpl2dom = function(root, opts, realRoot) {
         var val = opts.for;
         if (!val) return null;
@@ -302,9 +302,10 @@
         }
         return children;
     };
-    var setObserver = function(root, opts, realRoot) {
+    var setObserver = function(root, opts, realRoot, injectOpts) {
         realRoot.observe = realRoot.observe || new Obs(realRoot);
-        realRoot.observe.add(root, opts);
+        realRoot.observe.add(root, opts, injectOpts);
+        return realRoot.observe;
     };
     var inject = function(opts, injectOpts) {};
     var setChildren = function(root, obj, realRoot, injectOpts) {
@@ -326,10 +327,15 @@
                 }
             } else {
                 if (obj.hasOwnProperty('for')) {
-                    var cFromTpl = tpl2dom(root, obj, realRoot);
-                    setChildren(root, cFromTpl, realRoot, injectOpts);
                     if (isObj(obj.update)) {
-                        setObserver(root, obj, realRoot);
+                        var obsProp = obj.update.observeProp;
+                        if (isStrOrNum(obsProp)) {
+                            var observer = setObserver(root, obj, realRoot, injectOpts);
+                            observer[obsProp] = obj.for;
+                        }
+                    } else {
+                        var cFromTpl = tpl2dom(root, obj, realRoot);
+                        setChildren(root, cFromTpl, realRoot, injectOpts);
                     }
                 } else if (obj.hasOwnProperty('fn')) {
                     var fn = obj.fn;
@@ -383,12 +389,17 @@
             el.setAttribute(c2d(key), val);
         }
     };
+    var pxStyle = [ 'width', 'height', 'maxWidth', 'minWidth', 'maxHeight', 'minHeight' ];
+    ![ '', 'Top', 'Right', 'Bottom', 'Left' ].forEach(function(pos) {
+        pxStyle.push('padding' + pos);
+        pxStyle.push('margin' + pos);
+    });
     var setStyle = function(el, opts) {
         var styles = Object.keys(opts);
         for (var i = 0; i < styles.length; i++) {
             var styleKey = styles[i];
             var styleVal = opts[styleKey];
-            el.style[styleKey] = isNaN(styleVal) ? styleVal : styleVal + 'px';
+            if (pxStyle.indexOf(styleKey) !== -1) el.style[styleKey] = isNaN(styleVal) ? styleVal : styleVal + 'px'; else el.style[styleKey] = styleVal;
         }
     };
     var setters = {
@@ -422,7 +433,7 @@
         return Boolean(bool);
     };
     var dimensionStyle = [ 'width', 'height', 'maxWidth', 'maxHeight', 'padding', 'margin' ];
-    var displayStyle = [ 'color', 'backgroundColor', 'background', 'display', 'position', 'opacity' ];
+    var displayStyle = [ 'color', 'backgroundColor', 'background', 'display', 'position', 'border', 'transform', 'opacity', 'fontSize' ];
     var shareStyle = [ 'defaults' ];
     var fnConfig = [ 'style', 'children', 'items', 'attrs', 'events' ];
     var mouseEvts = [ 'click', 'mousedown', 'mouseup', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave', 'mousemove' ];

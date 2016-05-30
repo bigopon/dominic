@@ -12,10 +12,10 @@ Basic feature list:
 
 And here's some code! :+1:
 
-#### Basic
+#### Basic 1:
 ```javascript
 var root = Dominic.createElement('div', {
-  className: 'root',
+  cls: 'root', // or cls: 'root' | cls as alias for className
   parent: document.body,
   width: 300,
   height: 300,
@@ -42,7 +42,11 @@ var root = Dominic.createElement('div', {
 ###### Result
 ![alt tag](http://img.prntscr.com/img?url=http://i.imgur.com/XFBYYe4.png)
 
-#### Basic 2: Function as item
+###### Styling
+* Only `width`, `height`, `margin`, `padding`, `minHeight`, `maxHeight`,  `minWidth`, `maxWidth` will be converted to proper CSS value if value is number
+
+#### Basic 2: Function as item & div all the elements
+* Tag name is 'div' by default
 ```javascript
 var outerScopeDataSource = [
   { name: 'yellow' },
@@ -50,13 +54,13 @@ var outerScopeDataSource = [
   { name: 'pink' }
 ]
 var root = Dominic.createElement('div', {
-  className: 'root',
+  cls: 'root',
   parent: document.body,
   width: 300,
   height: 300,
   background: 'darkgreen',
   items: [
-    { tag: 'div', width: 50, height: 50, text: 'Intro', display: 'inline-block', background: 'yellowgreen',
+    { width: 50, height: 50, text: 'Intro', display: 'inline-block', background: 'yellowgreen',
       items: [
         function () {
           return outerScopeDataSource.map(function (data) {
@@ -65,37 +69,35 @@ var root = Dominic.createElement('div', {
         }
       ]
     },
-    { tag: 'div', width: 200, background: 'lightgreen',
+    { width: 200, background: 'lightgreen',
       items: ['color', 'material'].map(function (val) {
-        return { tag: 'span', text: val }
+        return { text: val }
       })
     }
   ]
 })
 ```
 ###### Result
-![](http://img.prntscr.com/img?url=http://i.imgur.com/9XrH9HA.png)
+![](http://image.prntscr.com/image/96b684409c2847a9bd92aa691ea4d294.png)
 
-#### Basic 3: Share configures
+#### Basic 3: Share configs
 ```javascript
 var root = Dominic.createElement('div', {
-    className: 'root',
+    cls: 'root',
     parent: document.body,
     width: '100%',
     height: '100%',
     defaults: {
         display: 'inline-block',
         height: '100%',
-        className: 'default-class',
+        cls: 'default-class',
         style: {
             verticalAlign: 'top'
         }
     },
     items: [
-        { tag: 'div', className: 'sidebar', width: 200, ref: 'sidebar', background: 'lightgreen',
-    
-        },
-        { tag: 'div', className: 'main', width: 'calc(100% - 200px)', ref: 'main', background: 'lightblue',
+        { cls: 'sidebar', width: 200, ref: 'sidebar', background: 'lightgreen' },
+        { cls: 'main', width: 'calc(100% - 200px)', ref: 'main', background: 'lightblue',
             defaults: {
                 background: 'tomato',
                 margin: 5,
@@ -104,11 +106,11 @@ var root = Dominic.createElement('div', {
                 display: 'inline-block'
             },
             items: [
-                { tag: 'div', text: 1 },
-                { tag: 'div', text: 2 },
-                [3,4,5,6].map(function (v) { return { tag: 'div', text: v } }),
+                { text: 1 },
+                { text: 2 },
+                [3,4,5,6].map(function (v) { return { text: v } }),
                 function () {
-                    return [5,6,7,8].map(function (v) { return { tag: 'div', text: v } })
+                    return [5,6,7,8].map(function (v) { return { text: v } })
                 }
             ]
         },
@@ -195,13 +197,13 @@ var root = Dominic.createElement('div', {
   height: 300,
   background: 'darkgreen',
   items: [
-    { tag: 'div', width: 50, height: 50, text: 'Intro', display: 'inline-block', background: 'yellowgreen' },
-    { tag: 'div', width: 200, background: 'lightgreen', ref: 'orange',
+    { width: 50, height: 50, text: 'Intro', display: 'inline-block', background: 'yellowgreen' },
+    { width: 200, background: 'lightgreen', ref: 'orange', // access by root.refs.orange
       items: [
-       { tag: 'div', width: 20, height: 20, background: 'red',
+       { width: 20, height: 20, background: 'red',
          ref: 'lightgreen' // access by root.refs.lightgreen
        },
-       { tag: 'div', width: 20, height: 20, background: 'orange',
+       { width: 20, height: 20, background: 'orange',
          ref: 'orange', refScope: 'parent' // access by root.refs.orange.refs.orange
        },
       ]
@@ -210,7 +212,7 @@ var root = Dominic.createElement('div', {
 })
 ```
 
-#### Events
+#### Events 1:
 Reserved keyword for events:
 * Mouse: `click` `mousedown` `mouseup` `mouseover` `mouseout` `mouseenter` `mouseleave` `mousemove`
 * Drag: `dragstart` `dragend` `drag` `dragover` `dragenter` `dragout` `drop`
@@ -274,6 +276,32 @@ var root = Dominic.createElement('div', {
       console.log('Out of:', e.target)
     }}
   ]
+})
+```
+
+#### Events 2: Delegate
+```javascript
+var root = Dominic.createElement('div', {
+  cls: 'root',
+  id: 'root',
+  parent: document.body,
+  width: 300,
+  height: 300,
+  background: 'darkgreen',
+  items: [
+    { width: 50, height: 50, text: 'Intro', display: 'inline-block', background: 'yellowgreen' },
+    { width: 200, background: 'lightgreen',
+      items: [
+       { cls: 'child red', width: 20, height: 20, background: 'red' },
+       { cls: 'child orange', width: 20, height: 20, background: 'orange' },
+       { cls: 'child yellow', width: 20, height: 20, background: 'yellow' }
+      ],
+	  click: { scope: 'root', handler: 'onClickLightgreen', delegate: '.child' }
+    }
+  ],
+  onClickLightgreen: function (e) {
+    console.log('This is: ' + this.localName + '.' + this.className.replace(' ', '.'))
+  }
 })
 ```
 
@@ -439,8 +467,9 @@ console.log('' + root)
 ```
 
 ## Plan
-- [x] Support server side rendering (to Html string)
-- [ ] Proper event delegation with CSS selector (Working but not nice)
+- [ ] Have basic layouts: `facebook`, `twitter`, `pinterest`
+- [ ] Have basic components: `tab`, `combobox`, `table` 
+
 
 ## License
 .MIT
