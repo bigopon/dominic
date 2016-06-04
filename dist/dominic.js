@@ -46,7 +46,7 @@
         dest = dest || {};
         for (var i = 1; i < arguments.length; i++) {
             var src = arguments[i];
-            var keys = Object.keys(arguments[i]);
+            var keys = Object.keys(src);
             for (var j = 0; j < keys.length; j++) {
                 dest[keys[j]] = src[keys[j]];
             }
@@ -247,7 +247,7 @@
                 value: function(root, opts, injectOpts) {
                     var obsProp = opts.update ? opts.update.observeProp : '';
                     if (!obsProp || obsProp === '__owner' || !isStrOrNum(obsProp)) return false;
-                    var defaultOpts = assign({}, injectOpts);
+                    var defaultOpts = assign({}, injectOpts || {});
                     var cacheOpts = assign2({}, opts, {
                         obsProp: obsProp
                     }, 'tplFn,for,root,obsProp,update');
@@ -466,6 +466,7 @@
         var delayEvts;
         var delayCb;
         var delayClasses;
+        var delayExtraClasses;
         var delayRoot;
         var injectOpts;
         var delayNoDisplay;
