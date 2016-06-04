@@ -82,7 +82,7 @@ var root = Dominic.createElement('div', {
 ###### Result
 ![](http://image.prntscr.com/image/96b684409c2847a9bd92aa691ea4d294.png)
 
-#### Basic 3: Share configs
+#### Basic 3a: Share configs
 ```javascript
 var root = Dominic.createElement('div', {
     cls: 'root',
@@ -126,6 +126,27 @@ var root = Dominic.createElement('div', {
 ###### Result
 ![](http://img.prntscr.com/img?url=http://i.imgur.com/o8Nt3GZ.png)
 
+#### Basic 3b: Share configs with extra class
+`xtraCls`, `xCls`: `string`
+```javascript
+var root = Dominic.createElement('div', {
+    cls: 'root',
+    parent: document.body,
+    width: '100%',
+    height: '100%',
+    defaults: {
+        cls: 'default-class',
+    },
+    items: [
+        { xCls: 'sidebar' },
+        { xtraCls: 'main' },
+        { tag: 'test' }
+    ]
+})
+```
+###### Result
+![](http://image.prntscr.com/image/6f45032d704043bfaf4f84df6cdf1613.png)
+
 #### Basic 4: Condition `if`/ `hide`
 ```javascript
 var root = Dominic.createElement('div', {
@@ -142,8 +163,8 @@ var root = Dominic.createElement('div', {
     }
   },
   items: [
-    { tag: 'div', className: 'sidebar', width: 200, ref: 'sidebar', background: 'lightgreen' },
-    { tag: 'div', className: 'main',
+    { cls: 'sidebar', width: 200, ref: 'sidebar', background: 'lightgreen' },
+    { cls: 'main',
       width: 'calc(100% - 200px)',
       ref: 'main',
       background: 'lightblue',
@@ -155,11 +176,13 @@ var root = Dominic.createElement('div', {
         display: 'inline-block'
       },
       items: [
-        { tag: 'div', text: 'First' },
-        { tag: 'div', text: 'Second' },
-        [3,4,5,6].map(function (v, i) { return { tag: 'div', text: 'Value is: ' + v, if: v < 4 } }),
+        { text: 'First' },
+        { text: 'Second' },
+        [3,4,5,6].map(function (v, i) {
+          return { text: 'Value is: ' + v, if: v < 4 }
+        }),
         function () {
-          return [5,6,7,8].map(function (v, i) { return { tag: 'div', text: v, hide: v > 6 } })
+          return [5,6,7,8].map(function (v) { return { text: v, hide: v > 6 } })
         }
       ]
     }
@@ -199,14 +222,15 @@ var root = Dominic.createElement('div', {
   height: 300,
   background: 'darkgreen',
   items: [
-    { width: 50, height: 50, text: 'Intro', display: 'inline-block', background: 'yellowgreen' },
-    { width: 200, background: 'lightgreen', ref: 'orange', // access by root.refs.orange
+    { width: 50, height: 50, text: 'Intro', display: 'inline-block' },
+    { width: 200, ref: 'orange', // access by root.refs.orange
       items: [
        { width: 20, height: 20, background: 'red',
          ref: 'lightgreen' // access by root.refs.lightgreen
        },
        { width: 20, height: 20, background: 'orange',
-         ref: 'orange', refScope: 'parent' // access by root.refs.orange.refs.orange
+         // access by root.refs.orange.refs.orange
+         ref: 'orange', refScope: 'parent'
        },
       ]
     }
@@ -270,7 +294,7 @@ var root = Dominic.createElement('div', {
   ],
   onClickYellow: function (e) {
     var t = e.target
-  	// From div.yellow to div.root
+    // From div.yellow to div.root
     console.log('From ', t.localName + '.' + t.className + ' to ' + this.localName + '.' + this.className)
   },
   events: [
@@ -298,11 +322,15 @@ var root = Dominic.createElement('div', {
        { cls: 'child orange', width: 20, height: 20, background: 'orange' },
        { cls: 'child yellow', width: 20, height: 20, background: 'yellow' }
       ],
-	  click: { scope: 'root', handler: 'onClickLightgreen', delegate: '.child' }
+      click: { scope: 'root', handler: 'onClickLightgreen', delegate: '.child' }
     }
   ],
-  onClickLightgreen: function (e) {
-    console.log('This is: ' + this.localName + '.' + this.className.replace(' ', '.'))
+  onClickLightgreen: function (e, match, delegate) {
+    // this: scope when register event listener. Default: element has listener
+    // e: event object
+    // match: element matching delegate
+    // delegate: delegate css selector passed when register event listener
+    console.log('This is: ' + match.localName + '.' + match.className.replace(' ', '.'))
   }
 })
 ```
@@ -338,7 +366,7 @@ var root = Dominic.createElement('div', {
       return { tag: 'div', text: item.name, padding: 5, margin: '5px 0 0 5px', background: 'tomato',
         items: {
           for: item.suppliers,
-		  root: 'data', // specify which property to look for data
+          root: 'data', // specify which property to look for data
           tplFn: function (sup, supIdx) {
             return { tag: 'div',
               padding: 5,

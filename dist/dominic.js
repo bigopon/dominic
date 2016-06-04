@@ -116,7 +116,7 @@
                 var match = walkUpAndFindMatch(el, event.target, delegate);
                 if (!match) return;
                 if (typeof callback === 'function') {
-                    callback.call(match, event);
+                    callback.call(thisArg, event, match, delegate);
                 }
             } else {
                 if (typeof callback === 'function') {
@@ -409,9 +409,6 @@
         setchildren: setChildren,
         setitems: setChildren
     };
-    var setDelayClasses = function(el, classes) {
-        for (var i = 0, length = classes.length; i < length; i++) el.className = (el.className + classes[i]).trim();
-    };
     var setDelaySetups = function(el, setups, root, injectOpts) {
         for (var i = 0, length = setups.length; i < length; i++) {
             var setup = setups[i];
@@ -446,9 +443,10 @@
     var evtConfig = mouseEvts.concat(dragEvts, focusEvts, keyEvts, formEvts, touchEvts, scrEvts);
     var delayCbProps = [ 'created', 'appended' ];
     var delayProps = [ 'className', 'cls' ];
+    var delayExtraClasses = [ 'xtraCls', 'xCls' ];
     var delayTextProps = [ 'text', 'textContent' ];
     var delayAppendTarget = [ 'parent' ];
-    var allChecks = dimensionStyle.concat(displayStyle, shareStyle, fnConfig, evtConfig, delayCbProps, delayProps, delayTextProps, delayAppendTarget);
+    var allChecks = dimensionStyle.concat(displayStyle, shareStyle, fnConfig, evtConfig, delayCbProps, delayProps, delayExtraClasses, delayTextProps, delayAppendTarget);
     var dimRange = dimensionStyle.length;
     var disRange = dimRange + displayStyle.length;
     var shareRange = disRange + shareStyle.length;
@@ -456,7 +454,8 @@
     var evtRange = fnRange + evtConfig.length;
     var cbRange = evtRange + delayCbProps.length;
     var propRange = cbRange + delayProps.length;
-    var textRange = propRange + delayTextProps.length;
+    var xtraRange = propRange + delayExtraClasses.length;
+    var textRange = xtraRange + delayTextProps.length;
     var CreateElement = function(name, attrs, root, data) {
         attrs = attrs || fakeOpts;
         if (attrs.hasOwnProperty('if') && !evalIf(attrs.if)) return null;
@@ -498,14 +497,16 @@
                 } else if (keyIdx < cbRange) {
                     (delayCb = delayCb || {})[key] = val;
                 } else if (keyIdx < propRange) {
-                    (delayClasses = delayClasses || []).push(val);
+                    delayClasses = (delayClasses || '') + ' ' + val;
+                } else if (keyIdx < xtraRange) {
+                    delayClasses = (delayClasses || '') + ' ' + val;
                 } else if (keyIdx < textRange) {
                     el.appendChild(doc.createTextNode(val));
                 } else delayRoot = val;
             }
         }
         if (delaySetups) setDelaySetups(el, delaySetups, root, injectOpts);
-        if (delayClasses) setDelayClasses(el, delayClasses);
+        if (delayClasses) el.className += (' ' + delayClasses).trim();
         if (delayEvts) setDelayEvts(el, delayEvts, root);
         if (delayCb && typeof delayCb.created === 'function') delayCb.created.call(el);
         if (delayRoot && isDom(delayRoot) && el === root) {
