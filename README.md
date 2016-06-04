@@ -335,6 +335,36 @@ var root = Dominic.createElement('div', {
 })
 ```
 
+#### Events 3: Key code hook
+- Only trigger key event with specified key codes
+```javascript
+var root = Dominic.createElement('div', {
+    cls: 'root',
+    parent: document.body,
+    width: '100%',
+    height: '100%',
+    defaults: {
+        cls: 'default-class',
+    },
+    items: [
+        { xCls: 'sidebar' },
+        { xtraCls: 'main' },
+        { tag: 'input',
+          keydown: { scope: 'root', handler: 'sayHelo', key: 13 }
+        },
+        { tag: 'input',
+          keydown: { scope: 'root', handler: 'onArrowKey', key: [37,38,39,40] }
+        }
+    ],
+    sayHelo: function (e) {
+      console.log('helo', e.target.value)
+    },
+    onArrowKey: function (e) {
+      console.log('Navigating:', e.keyCode)
+    }
+})
+```
+
 #### Template
 1. `for`: data source
 2. `TplFn`: function (item, itemIndex)

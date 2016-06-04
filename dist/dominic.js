@@ -109,16 +109,28 @@
         var capture = opts.capture || false;
         var delegate = opts.delegate;
         var current = null;
+        var isKeyEvt, keys;
+        if (keyEvts.indexOf(type) !== -1) {
+            if (typeof opts.key === 'number') {
+                isKeyEvt = true;
+                keys = [ opts.key ];
+            } else if (are(opts.key, 'number')) {
+                isKeyEvt = true;
+                keys = opts.key;
+            }
+        }
         var handler = function(event) {
             var el = event.currentTarget;
             if (typeof delegate === 'string') {
                 if (el === event.target) return;
                 var match = walkUpAndFindMatch(el, event.target, delegate);
                 if (!match) return;
+                if (isKeyEvt && keys.indexOf(event.keyCode) === -1) return;
                 if (typeof callback === 'function') {
                     callback.call(thisArg, event, match, delegate);
                 }
             } else {
+                if (isKeyEvt && keys.indexOf(event.keyCode) === -1) return;
                 if (typeof callback === 'function') {
                     callback.call(thisArg, event);
                 }
@@ -373,7 +385,8 @@
             el: root,
             callback: realHandler,
             capture: capture,
-            delegate: delegate
+            delegate: delegate,
+            key: evt.key
         }, scope);
         realRoot.evts = realRoot.evts || new Evt();
         realRoot.evts.push(handleType);
