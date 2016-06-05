@@ -46,6 +46,7 @@
         dest = dest || {};
         for (var i = 1; i < arguments.length; i++) {
             var src = arguments[i];
+            if (!src) continue;
             var keys = Object.keys(src);
             for (var j = 0; j < keys.length; j++) {
                 dest[keys[j]] = src[keys[j]];
@@ -62,6 +63,7 @@
         if (!propsToCopy.length) return dest;
         for (var i = 1; i < arguments.length - 1; i++) {
             var src = arguments[i];
+            if (!src) continue;
             var keys = Object.keys(arguments[i]);
             for (var j = 0; j < keys.length; j++) {
                 var key = keys[j];
@@ -76,6 +78,7 @@
         dest = dest || {};
         for (var i = 1; i < arguments.length; i++) {
             var src = arguments[i];
+            if (!src) continue;
             var keys = Object.keys(arguments[i]);
             for (var j = 0; j < keys.length; j++) {
                 var key = keys[j];
@@ -259,7 +262,7 @@
                 value: function(root, opts, injectOpts) {
                     var obsProp = opts.update ? opts.update.observeProp : '';
                     if (!obsProp || obsProp === '__owner' || !isStrOrNum(obsProp)) return false;
-                    var defaultOpts = assign({}, injectOpts || {});
+                    var defaultOpts = assign({}, injectOpts);
                     var cacheOpts = assign2({}, opts, {
                         obsProp: obsProp
                     }, 'tplFn,for,root,obsProp,update');
@@ -322,7 +325,11 @@
     var inject = function(opts, injectOpts) {};
     var setChildren = function(root, obj, realRoot, injectOpts) {
         'use strict';
-        if (!isObj(obj)) return;
+        if (!obj) return;
+        if (isStrOrNum(obj)) {
+            root.appendChild(doc.createTextNode(obj));
+            return;
+        }
         if (isDom(obj)) {
             root.appendChild(obj);
             setRefs(root, obj, realRoot);

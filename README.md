@@ -20,7 +20,9 @@ var root = Dominic.createElement('div', {
   width: 300,
   height: 300,
   background: 'darkgreen',
+  // items can be replace with children
   items: [
+    // also accept string, number as children, will be converted to text node
     { tag: 'div', width: 50, height: 50, text: 'Intro', display: 'inline-block', background: 'yellowgreen' },
     { tag: 'div', width: 200, background: 'lightgreen',
       items: [
