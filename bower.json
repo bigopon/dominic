@@ -1,6 +1,6 @@
 {
   "name": "dominic",
-  "version": "0.1.28",
+  "version": "0.1.29",
   "description": "Helper to quickly build up DOM in simple javascript object format.",
   "main": [
     "dist/dominic.js"

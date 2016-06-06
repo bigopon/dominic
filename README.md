@@ -367,7 +367,7 @@ var root = Dominic.createElement('div', {
 })
 ```
 
-#### Template
+#### Template 1a
 1. `for`: data source
 2. `TplFn`: function (item, itemIndex)
 * If data source provided is an array, item is record of array and itemIndex is record index
@@ -414,6 +414,34 @@ var root = Dominic.createElement('div', {
 ```
 ###### Result
 ![](http://img.prntscr.com/img?url=http://i.imgur.com/aZVNQe8.png)
+
+#### Template 1b
+* Can also loop through object property if specified with `alwaysIterate`
+```javascript
+var root = Dominic.createElement('div', {
+    cls: 'root',
+    parent: document.body,
+    defaults: {
+        cls: 'default-class',
+    },
+    items: [
+      { for: { a: 5, b: 6, c: 7},
+        alwaysIterate: true,
+        // value & key instead value & index
+        tplFn: function (v, key) {
+          return { text: 'Value is: ' + v + '. Key is: ' + key }
+        }
+      },
+      { xCls: 'sidebar' },
+      { xtraCls: 'main', items: {
+        for: [5,6,7,8],
+        tplFn: function (v) { return v }
+      }},
+    ]
+})
+```
+###### Result
+![](http://image.prntscr.com/image/bc5ae70b6911427897014bf17dee57b0.png)
 
 #### Template with data change reaction
 ```javascript

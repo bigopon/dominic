@@ -105,35 +105,23 @@
         }
         return null;
     };
-    var HandleEvent = function(type, opts, thisArg) {
+    function HandleEvent(type, opts, thisArg) {
         opts = opts || {};
         var el = opts.el || doc.documentElement;
         var callback = opts.callback;
         var capture = opts.capture || false;
         var delegate = opts.delegate;
         var current = null;
-        var isKeyEvt, keys;
-        if (keyEvts.indexOf(type) !== -1) {
-            if (typeof opts.key === 'number') {
-                isKeyEvt = true;
-                keys = [ opts.key ];
-            } else if (are(opts.key, 'number')) {
-                isKeyEvt = true;
-                keys = opts.key;
-            }
-        }
         var handler = function(event) {
             var el = event.currentTarget;
             if (typeof delegate === 'string') {
                 if (el === event.target) return;
                 var match = walkUpAndFindMatch(el, event.target, delegate);
                 if (!match) return;
-                if (isKeyEvt && keys.indexOf(event.keyCode) === -1) return;
                 if (typeof callback === 'function') {
                     callback.call(thisArg, event, match, delegate);
                 }
             } else {
-                if (isKeyEvt && keys.indexOf(event.keyCode) === -1) return;
                 if (typeof callback === 'function') {
                     callback.call(thisArg, event);
                 }
@@ -148,7 +136,42 @@
         handler.capture = capture;
         el.addEventListener(type, handler, capture);
         return handler;
-    };
+    }
+    function HandleKeyEvent(type, opts, thisArg) {
+        opts = opts || {};
+        var el = opts.el || doc.documentElement;
+        var callback = opts.callback;
+        var capture = opts.capture;
+        var delegate = opts.delegate;
+        var keys;
+        if (typeof opts.key === 'number') keys = [ opts.key ]; else if (are(opts.key, 'number')) keys = opts.key;
+        var handler = function(event) {
+            var el = event.currentTarget;
+            if (typeof delegate === 'string') {
+                if (el === event.target) return;
+                var match = walkUpAndFindMatch(el, event.target, delegate);
+                if (!match) return;
+                if (keys && keys.indexOf(event.keyCode) === -1) return;
+                if (typeof callback === 'function') {
+                    callback.call(thisArg, event, match, delegate);
+                }
+            } else {
+                if (keys && keys.indexOf(event.keyCode) === -1) return;
+                if (typeof callback === 'function') {
+                    callback.call(thisArg, event);
+                }
+            }
+        };
+        handler.destroy = function() {
+            this.el = null;
+            return el.removeEventListener(type, handler, capture);
+        };
+        handler.el = el;
+        handler.type = type;
+        handler.capture = capture;
+        el.addEventListener(type, handler, capture);
+        return handler;
+    }
     var defProps = Object.defineProperties;
     var defProp = Object.defineProperty;
     var Evt = function() {
@@ -311,9 +334,13 @@
         var children;
         if (data && typeof fn === 'function') {
             var scope = opts.scope;
-            var scopeType = typeof scope;
             var thisArg = scope === 'root' ? realRoot : scope === 'parent' ? root : scope;
-            if (Array.isArray(data)) children = data.map(fn, thisArg); else children = fn.call(thisArg, data);
+            if (Array.isArray(data)) children = data.map(fn, thisArg); else if (isObj(data) && opts.alwaysIterate) {
+                var keys = Object.keys(data);
+                children = keys.map(function(key) {
+                    return fn.call(thisArg, data[key], key);
+                });
+            } else children = fn.call(thisArg, data);
         }
         return children;
     };
@@ -322,7 +349,6 @@
         realRoot.observe.add(root, opts, injectOpts);
         return realRoot.observe;
     };
-    var inject = function(opts, injectOpts) {};
     var setChildren = function(root, obj, realRoot, injectOpts) {
         'use strict';
         if (!obj) return;
@@ -388,7 +414,15 @@
         if (typeof realHandler !== 'function') throw new Error('Cannot find handler: "' + handler + '" on element: [' + toSelector(scope) + '].');
         var capture = evt.capture;
         var delegate = evt.delegate;
-        var handleType = HandleEvent(type, {
+        var isKeyEvt = keyEvts.indexOf(type) !== -1;
+        var evtHandler;
+        if (isKeyEvt) evtHandler = HandleKeyEvent(type, {
+            el: root,
+            callback: realHandler,
+            capture: capture,
+            delegate: delegate,
+            key: evt.key
+        }, scope); else evtHandler = HandleEvent(type, {
             el: root,
             callback: realHandler,
             capture: capture,
@@ -396,7 +430,7 @@
             key: evt.key
         }, scope);
         realRoot.evts = realRoot.evts || new Evt();
-        realRoot.evts.push(handleType);
+        realRoot.evts.push(evtHandler);
     };
     var setEvents = function(root, eventArgs, realRoot) {
         if (Array.isArray(eventArgs)) for (var i = 0; i < eventArgs.length; i++) attachEvent(root, eventArgs[i], realRoot); else attachEvent(root, eventArgs, realRoot);
