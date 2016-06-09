@@ -15,13 +15,12 @@ And here's some code! :+1:
 #### Basic 1:
 ```javascript
 var root = Dominic.createElement('div', {
-  cls: 'root', // or cls: 'root' | cls as alias for className
+  cls: 'root', // or className: 'root' | cls as alias for className
   parent: document.body,
   width: 300,
   height: 300,
   background: 'darkgreen',
-  // items can be replace with children
-  items: [
+  items: [ // or: children
     // also accept string, number as children, will be converted to text node
     { tag: 'div', width: 50, height: 50, text: 'Intro', display: 'inline-block', background: 'yellowgreen' },
     { tag: 'div', width: 200, background: 'lightgreen',
@@ -243,7 +242,7 @@ var root = Dominic.createElement('div', {
 #### Events 1:
 Reserved keyword for events:
 * Mouse: `click` `mousedown` `mouseup` `mouseover` `mouseout` `mouseenter` `mouseleave` `mousemove`
-* Drag: `dragstart` `dragend` `drag` `dragover` `dragenter` `dragout` `drop`
+* Drag: `dragstart` `dragend` `drag` `dragover` `dragenter` `dragleave` `drop`
 * Focus: `blur` `focus` 
 * Keyboard: `keydown` `keypress` `keyup`
 * Form: `change` `input` `submit`
@@ -426,19 +425,25 @@ var root = Dominic.createElement('div', {
     },
     items: [
       { for: { a: 5, b: 6, c: 7},
+        update: { observeProp: 'data1' } ,
         alwaysIterate: true,
         // value & key instead value & index
         tplFn: function (v, key) {
-          return { text: 'Value is: ' + v + '. Key is: ' + key }
+          return { text: 'Value is: [' + v + ']. Key is: [' + key + ']' }
         }
       },
       { xCls: 'sidebar' },
       { xtraCls: 'main', items: {
         for: [5,6,7,8],
+        update: { observeProp: 'data2' },
         tplFn: function (v) { return v }
       }},
     ]
 })
+
+// change:
+root.observe.data1 = { name: 'Dominic', purpose: 'Helper', target: 'quick dom for test' }
+root.observe.data2 = [ 'Helo ', 'This ', 'is ', 'a ', 'test ' ]
 ```
 ###### Result
 ![](http://image.prntscr.com/image/bc5ae70b6911427897014bf17dee57b0.png)

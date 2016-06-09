@@ -42,7 +42,13 @@
     var cap = function(str) {
         return str[0].toUpperCase() + str.slice(1);
     };
-    var assign = function(dest) {
+    function forEach(nodeList, expression, thisArg) {
+        if (nodeList) for (var i = 0; i < nodeList.length; i++) expression.call(thisArg, nodeList[i], i);
+    }
+    function indexOf(el, nodeList) {
+        return Array.prototype.indexOf.call(nodeList, el);
+    }
+    function assign(dest) {
         dest = dest || {};
         for (var i = 1; i < arguments.length; i++) {
             var src = arguments[i];
@@ -53,8 +59,8 @@
             }
         }
         return dest;
-    };
-    var assign2 = function(dest) {
+    }
+    function assign2(dest) {
         dest = dest || {};
         if (arguments.length < 2) return dest;
         var propsToCopyCfg = arguments[arguments.length - 1];
@@ -73,8 +79,8 @@
             }
         }
         return dest;
-    };
-    var assign3 = function(dest) {
+    }
+    function assign3(dest) {
         dest = dest || {};
         for (var i = 1; i < arguments.length; i++) {
             var src = arguments[i];
@@ -90,21 +96,21 @@
             }
         }
         return dest;
-    };
-    var toSelector = function(dom) {
+    }
+    function toSelector(dom) {
         var id = dom.id ? '#' + dom.id : '';
         var clsStr = dom.classList.toString();
         var classes = clsStr ? clsStr.split(' ') : fakeArray;
         var selector = dom.localName + id + (classes.length ? '.' + classes.join('.') : '');
         return selector;
-    };
-    var walkUpAndFindMatch = function(dest, current, selector) {
+    }
+    function walkUpAndFindMatch(dest, current, selector) {
         while (current && current !== dest) {
             if (current.matches(selector)) return current;
             current = current.parentNode;
         }
         return null;
-    };
+    }
     function HandleEvent(type, opts, thisArg) {
         opts = opts || {};
         var el = opts.el || doc.documentElement;
@@ -174,7 +180,6 @@
     }
     var defProps = Object.defineProperties;
     var defProp = Object.defineProperty;
-    var indexOf = Array.prototype.indexOf;
     var Evt = function() {
         var Evt = function() {
             Array.call(this);
@@ -246,25 +251,22 @@
             removeAll: {
                 value: function() {
                     var allrefs = Object.keys(this);
-                    var count = 0;
-                    for (;count < allrefs.length; count++) delete this[allrefs[count]];
+                    for (var count = 0; count < allrefs.length; count++) delete this[allrefs[count]];
                     return count === allrefs.length;
                 }
             }
         });
         return Refs;
     }();
-    var setRefs = function(root, el, realRoot) {
+    function setRefs(root, el, realRoot) {
         var ref = el.ref;
         if (!isStrOrNum(ref)) return;
         var refScope = el.refScope;
         var scope = refScope === 'parent' ? root : realRoot;
         scope.refs = scope.refs || new Refs();
         scope.refs[ref] = el;
-        defProp(el, '__hasReference', {
-            value: true
-        });
-    };
+        el.setAttribute('data-hr', refScope === 'parent' ? 'pr' : 'rr');
+    }
     var Obs = function() {
         var Obs = function(realRoot) {
             if (typeof realRoot === 'undefined') throw new Error('No root provided');
@@ -284,36 +286,94 @@
             var newKeys = Object.keys(newData);
             if (oldKeys.join('') !== newKeys.join('')) return true;
         }
+        function removeEvt(el) {
+            el.evts.removeAll();
+            delete el.evts;
+        }
+        function removeAllEvts(el) {
+            if (el.evts) removeEvt(el);
+            var hasEvtCEl = el.querySelectorAll('[data-he]');
+            forEach(hasEvtCEl, removeEvt);
+        }
+        function removeAllRefInParent(el) {
+            var parent = el.parentNode;
+            if (parent.refs) {
+                parent.refs.removeAll();
+                delete parent.refs;
+            }
+        }
+        function removeRefInRoot(el, root) {
+            if (root.refs) root.refs.remove(function(refdEl, key) {
+                return el === refdEl || el.contains(refdEl);
+            });
+        }
+        function removeRef(el, root) {
+            var elRefType = el.getAttribute('data-hr');
+            if (elRefType === 'pr') removeAllRefInParent(el); else if (elRefType === 'rr') removeRefInRoot(el, root);
+        }
+        function removeAllRefs(el, root) {
+            if (el.refs) {
+                el.refs.removeAll();
+                delete el.refs;
+            }
+            removeRef(el, root);
+            var hasRefEls = el.querySelectorAll('[data-hr]');
+            forEach(hasRefEls, function(hasRefEl) {
+                removeRef(hasRefEl, root);
+            });
+        }
+        function removeEls(els, root) {
+            forEach(els, function(el, elIdx) {
+                removeAllEvts(el);
+                removeAllRefs(el, root);
+                el.parentNode.removeChild(el);
+            });
+        }
+        var specialKey = Math.floor(Math.random() * 1e5);
         defProps(Obs.prototype, {
             add: {
                 value: function(root, opts, injectOpts) {
                     var obsProp = opts.update ? opts.update.observeProp : '';
                     if (!obsProp || obsProp === '__owner' || !isStrOrNum(obsProp)) return;
-                    var specialKey = Math.random() + '';
+                    var thisTplKey = specialKey++ + '';
                     var defaultOpts = assign({
-                        specialKey: specialKey
+                        attrs: {
+                            dataTk: thisTplKey
+                        }
                     }, injectOpts);
                     var cacheOpts = assign2({}, opts, {
                         obsProp: obsProp
                     }, 'tplFn,for,root,obsProp,update,alwaysIterate');
                     defProp(this, obsProp, {
-                        get: function() {
-                            return this.__data[obsProp];
-                        },
-                        set: function(root, cacheOpts, defaultOpts, specialKey, val) {
+                        get: function(observeProperty) {
+                            return this.__data[observeProperty];
+                        }.bind(this, obsProp),
+                        set: function(root, cacheOpts, defaultOpts, thisTplKey, val) {
                             var obsProp = cacheOpts.obsProp;
                             this.__data[obsProp] = val;
                             cacheOpts.for = val;
-                            while (root.firstChild) {
-                                var removedChild = root.removeChild(root.firstChild);
-                                if (removedChild.evts) removedChild.evts.removeAll();
-                                if (removedChild.__hasReference === true) this.__owner.refs.remove(function(el, ref) {
-                                    return removedChild === el || removedChild.contains(el);
-                                });
+                            var tobeRemoved = root.querySelectorAll('[data-tk="' + thisTplKey + '"]');
+                            var toStartEl;
+                            var shouldRemoveAfterAppend = false;
+                            if (tobeRemoved.length) {
+                                toStartEl = tobeRemoved[0].previousSibling;
+                                if (toStartEl === null) {
+                                    var currentChildNodes = root.childNodes;
+                                    if (currentChildNodes.length > tobeRemoved.length) {
+                                        toStartEl = root.insertBefore(doc.createElement('a'), currentChildNodes[0]);
+                                        shouldRemoveAfterAppend = true;
+                                    }
+                                }
+                                removeEls(tobeRemoved, this.__owner);
+                            } else {
+                                toStartEl = root.lastChild;
                             }
                             var newCFromTpl = tpl2dom(root, cacheOpts, this.__owner);
-                            setChildren(root, newCFromTpl, this.__owner, defaultOpts);
-                        }.bind(this, root, cacheOpts, defaultOpts, specialKey)
+                            setChildren(root, newCFromTpl, this.__owner, defaultOpts, {
+                                startEl: toStartEl
+                            });
+                            if (shouldRemoveAfterAppend) root.removeChild(toStartEl);
+                        }.bind(this, root, cacheOpts, defaultOpts, thisTplKey)
                     });
                 }
             },
@@ -330,7 +390,7 @@
         });
         return Obs;
     }();
-    var tpl2dom = function(root, opts, realRoot) {
+    function tpl2dom(root, opts, realRoot) {
         var val = opts.for;
         if (!val) return null;
         var valRoot = opts.root || '';
@@ -348,22 +408,22 @@
             } else children = fn.call(thisArg, data);
         }
         return children;
-    };
-    var setObserver = function(root, opts, realRoot, injectOpts) {
+    }
+    function setObserver(root, opts, realRoot, injectOpts) {
         realRoot.observe = realRoot.observe || new Obs(realRoot);
         realRoot.observe.add(root, opts, injectOpts);
         return realRoot.observe;
-    };
-    function fn2dom(root, defs, realRoot, injectOpts) {
+    }
+    function fn2dom(root, defs, realRoot, injectOpts, start) {
         var fn = defs.fn;
         if (typeof fn === 'function') {
             var scope = defs.scope;
             var thisArg = scope === 'root' ? realRoot : scope === 'parent' ? root : scope;
             var children = fn.call(thisArg);
-            setChildren(root, children, realRoot, injectOpts);
+            setChildren(root, children, realRoot, injectOpts, start);
         }
     }
-    function for2dom(root, defs, realRoot, injectOpts) {
+    function for2dom(root, defs, realRoot, injectOpts, start) {
         if (isObj(defs.update)) {
             var obsProp = defs.update.observeProp;
             if (isStrOrNum(obsProp)) {
@@ -372,59 +432,88 @@
             }
         } else {
             var cFromTpl = tpl2dom(root, defs, realRoot);
-            setChildren(root, cFromTpl, realRoot, injectOpts);
+            setChildren(root, cFromTpl, realRoot, injectOpts, start);
         }
     }
-    function arrV2dom(root, defs, realRoot, injectOpts) {
+    function arrV2dom(root, defs, realRoot, injectOpts, start) {
         for (var i = 0; i < defs.length; i++) {
             var opts = defs[i];
             if (injectOpts) assign3(opts, injectOpts);
-            setChildren(root, opts, realRoot, injectOpts);
+            setChildren(root, opts, realRoot, injectOpts, start);
         }
     }
-    function v2dom(root, defs, realRoot, injectOpts) {
+    function v2dom(root, defs, realRoot, injectOpts, start) {
         var tag = '' + (defs.tag || 'div');
         delete defs.tag;
         if (injectOpts) assign3(defs, injectOpts);
         var el = CreateElement(tag, defs, realRoot);
-        setChildren(root, el, realRoot, injectOpts);
+        setChildren(root, el, realRoot, injectOpts, start);
     }
-    var setChildren = function(root, obj, realRoot, injectOpts) {
+    function insertAt(root, el, startIndex) {
+        var pushedNode = root.childNodes[startIndex + 1];
+        if (pushedNode) {
+            root.insertBefore(el, pushedNode);
+        } else {
+            root.appendChild(el);
+        }
+    }
+    function getNextDifferentElByKey(startEl, key) {
+        while (startEl) {
+            if (startEl.getAttribute('data-tk') !== key) return startEl; else return getNextDifferentElByKey(startEl.nextSibling, key);
+        }
+        return null;
+    }
+    function insertAfter(root, el, start) {
+        var nextEl = start.startEl.nextSibling;
+        if (!nextEl) root.appendChild(el); else {
+            var elKey = el.getAttribute('data-tk');
+            var tailEl = getNextDifferentElByKey(nextEl, elKey);
+            if (tailEl) root.insertBefore(el, tailEl); else root.appendChild(el);
+        }
+    }
+    function setChildren(root, obj, realRoot, injectOpts, start) {
         'use strict';
         if (!obj) return;
         if (isStrOrNum(obj)) {
-            root.appendChild(doc.createTextNode(obj));
+            var textNode = doc.createTextNode(obj);
+            if (start && start.startEl) {
+                insertAfter(root, textNode, start);
+                start.startEl = textNode;
+            } else root.appendChild(textNode);
             return;
         }
         if (isDom(obj)) {
-            root.appendChild(obj);
+            if (start && start.startEl) {
+                insertAfter(root, obj, start);
+                start.startEl = obj;
+            } else root.appendChild(obj);
             setRefs(root, obj, realRoot);
         } else {
             if (typeof obj === 'function') {
                 var c = obj();
                 if (injectOpts) assign3(c, injectOpts);
-                setChildren(root, c, realRoot, injectOpts);
+                setChildren(root, c, realRoot, injectOpts, start);
             } else if (Array.isArray(obj)) {
-                arrV2dom(root, obj, realRoot, injectOpts);
+                arrV2dom.apply(null, arguments);
             } else {
                 if (obj.hasOwnProperty('for')) {
-                    for2dom(root, obj, realRoot, injectOpts);
+                    for2dom.apply(null, arguments);
                 } else if (obj.hasOwnProperty('fn')) {
-                    fn2dom(root, obj, realRoot, injectOpts);
+                    fn2dom.apply(null, arguments);
                 } else {
-                    v2dom(root, obj, realRoot, injectOpts);
+                    v2dom.apply(null, arguments);
                 }
             }
         }
-    };
-    var attachEvent = function(root, evt, realRoot) {
+    }
+    function attachEvent(el, evt, realRoot) {
         var type = evt.type;
         if (!type) throw new Error('No event type specified');
         var handler = evt.handler;
         var handlerRegType = typeof handler;
         var realHandler;
-        realRoot = realRoot || root;
-        var scope = evt.scope === 'root' ? realRoot : evt.scope ? evt.scope : root;
+        realRoot = realRoot || el;
+        var scope = evt.scope === 'root' ? realRoot : evt.scope ? evt.scope : el;
         if (handlerRegType === 'function') realHandler = handler; else if (handlerRegType === 'string') realHandler = scope[handler];
         if (typeof realHandler !== 'function') throw new Error('Cannot find handler: "' + handler + '" on element: [' + toSelector(scope) + '].');
         var capture = evt.capture;
@@ -432,45 +521,46 @@
         var isKeyEvt = keyEvts.indexOf(type) !== -1;
         var evtHandler;
         if (isKeyEvt) evtHandler = HandleKeyEvent(type, {
-            el: root,
+            el: el,
             callback: realHandler,
             capture: capture,
             delegate: delegate,
             key: evt.key
         }, scope); else evtHandler = HandleEvent(type, {
-            el: root,
+            el: el,
             callback: realHandler,
             capture: capture,
             delegate: delegate,
             key: evt.key
         }, scope);
-        root.evts = root.evts || new Evt();
-        root.evts.push(evtHandler);
-    };
-    var setEvents = function(root, eventArgs, realRoot) {
-        if (Array.isArray(eventArgs)) for (var i = 0; i < eventArgs.length; i++) attachEvent(root, eventArgs[i], realRoot); else attachEvent(root, eventArgs, realRoot);
-    };
-    var setAttrs = function(el, attrs) {
+        if (el) el.evts = el.evts || new Evt();
+        el.evts.push(evtHandler);
+        if (el.hasAttribute('data-he') == false) el.setAttribute('data-he', '');
+    }
+    function setEvents(el, eventArgs, realRoot) {
+        if (Array.isArray(eventArgs)) for (var i = 0; i < eventArgs.length; i++) attachEvent(el, eventArgs[i], realRoot); else attachEvent(el, eventArgs, realRoot);
+    }
+    function setAttrs(el, attrs) {
         var attributes = Object.keys(attrs);
         for (var i = 0; i < attributes.length; i++) {
             var key = attributes[i];
             var val = attrs[key];
             el.setAttribute(c2d(key), val);
         }
-    };
+    }
     var pxStyle = [ 'width', 'height', 'maxWidth', 'minWidth', 'maxHeight', 'minHeight' ];
     ![ '', 'Top', 'Right', 'Bottom', 'Left' ].forEach(function(pos) {
         pxStyle.push('padding' + pos);
         pxStyle.push('margin' + pos);
     });
-    var setStyle = function(el, opts) {
+    function setStyle(el, opts) {
         var styles = Object.keys(opts);
         for (var i = 0; i < styles.length; i++) {
             var styleKey = styles[i];
             var styleVal = opts[styleKey];
             if (pxStyle.indexOf(styleKey) !== -1) el.style[styleKey] = isNaN(styleVal) ? styleVal : styleVal + 'px'; else el.style[styleKey] = styleVal;
         }
-    };
+    }
     var setters = {
         setevents: setEvents,
         setattrs: setAttrs,
@@ -478,13 +568,13 @@
         setchildren: setChildren,
         setitems: setChildren
     };
-    var setDelaySetups = function(el, setups, root, injectOpts) {
+    function setDelaySetups(el, setups, root, injectOpts) {
         for (var i = 0, length = setups.length; i < length; i++) {
             var setup = setups[i];
             setters['set' + setup.key](el, setup.val, root, injectOpts);
         }
-    };
-    var setDelayEvts = function(el, events, root) {
+    }
+    function setDelayEvts(el, events, root) {
         for (var i = 0, length = events.length; i < length; i++) {
             var evt = events[i];
             var evtArgs = assign({}, {
@@ -492,18 +582,18 @@
             }, evt.val);
             attachEvent(el, evtArgs, root);
         }
-    };
-    var evalIf = function(condition) {
+    }
+    function evalIf(condition) {
         var bool;
         if (typeof condition === 'function') bool = condition(); else bool = condition;
         return Boolean(bool);
-    };
-    var dimensionStyle = [ 'width', 'height', 'minWidth', 'minHeight', 'maxWidth', 'maxHeight', 'padding', 'margin' ];
+    }
+    var dimensionStyle = pxStyle;
     var displayStyle = [ 'color', 'backgroundColor', 'background', 'display', 'position', 'border', 'transform', 'opacity', 'fontSize' ];
     var shareStyle = [ 'defaults' ];
     var fnConfig = [ 'style', 'children', 'items', 'attrs', 'events' ];
     var mouseEvts = [ 'click', 'mousedown', 'mouseup', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave', 'mousemove' ];
-    var dragEvts = [ 'dragstart', 'dragend', 'drag', 'dragover', 'dragenter', 'dragout', 'drop' ];
+    var dragEvts = [ 'dragstart', 'dragend', 'drag', 'dragover', 'dragenter', 'dragleave', 'drop' ];
     var focusEvts = [ 'blur', 'focus' ];
     var keyEvts = [ 'keydown', 'keypress', 'keyup' ];
     var formEvts = [ 'change', 'input', 'submit' ];
@@ -525,12 +615,12 @@
     var propRange = cbRange + delayProps.length;
     var xtraRange = propRange + delayExtraClasses.length;
     var textRange = xtraRange + delayTextProps.length;
-    var CreateElement = function(name, attrs, root, data) {
-        attrs = attrs || fakeOpts;
-        if (attrs.hasOwnProperty('if') && !evalIf(attrs.if)) return null;
+    var CreateElement = function(name, defs, root, data) {
+        defs = defs || fakeOpts;
+        if (defs.hasOwnProperty('if') && !evalIf(defs.if)) return null;
         var el = doc.createElement(name);
         root = root || el;
-        var attributes = Object.keys(attrs);
+        var definitions = Object.keys(defs);
         var delaySetups;
         var delayEvts;
         var delayCb;
@@ -539,13 +629,12 @@
         var delayRoot;
         var injectOpts;
         var delayNoDisplay;
-        if (attrs.hasOwnProperty('hide') && evalIf(attrs.hide)) {
-            delete attrs.hide;
+        if (defs.hasOwnProperty('hide') && evalIf(defs.hide)) {
             delayNoDisplay = true;
         }
-        for (var i = 0, length = attributes.length; i < length; i++) {
-            var key = attributes[i];
-            var val = attrs[key];
+        for (var i = 0, length = definitions.length; i < length; i++) {
+            var key = definitions[i];
+            var val = defs[key];
             var keyIdx = allChecks.indexOf(key);
             if (keyIdx == -1) el[key] = val; else {
                 if (keyIdx < dimRange) {
