@@ -22,6 +22,12 @@
         for (var i = 0; i < length; i++) count += typeof objs[i] === type ? 1 : 0;
         return count === length;
     };
+    var areDom = function(objs) {
+        if (!Array.isArray(obj)) return false;
+        var count = 0, length = objs.length;
+        for (var i = 0; i < length; i++) count += objs[i] instanceof Node ? 1 : 0;
+        return count === length;
+    };
     var isDom = function(obj) {
         return obj instanceof Node;
     };
@@ -380,6 +386,9 @@
                                 toStartEl = root.lastChild;
                             }
                             var newCFromTpl = tpl2dom(root, cacheOpts, this.__owner);
+                            if (isDom(newCFromTpl)) {
+                                assignDefs2Node(newCFromTpl, defaultOpts);
+                            }
                             setChildren(root, newCFromTpl, this.__owner, defaultOpts, {
                                 startEl: toStartEl
                             });
@@ -443,14 +452,49 @@
             }
         } else {
             var cFromTpl = tpl2dom(root, defs, realRoot);
+            if (isDom(cFromTpl)) {
+                assignDefs2Node(cFromTpl, injectOpts);
+            }
             setChildren(root, cFromTpl, realRoot, injectOpts, start);
+        }
+    }
+    function setStyleNoOverride(el, opts) {
+        var styles = Object.keys(opts);
+        for (var i = 0; i < styles.length; i++) {
+            var styleKey = styles[i];
+            if (el.style[styleKey] !== '') continue;
+            var styleVal = opts[styleKey];
+            if (pxStyle.indexOf(styleKey) !== -1) el.style[styleKey] = isNaN(styleVal) ? styleVal : styleVal + 'px'; else el.style[styleKey] = styleVal;
+        }
+    }
+    function setAttrsNoOverride(el, attrs) {
+        var attributes = Object.keys(attrs);
+        for (var i = 0; i < attributes.length; i++) {
+            var key = attributes[i];
+            var realKey = c2d(key);
+            if (el.hasAttribute(realKey)) continue;
+            var val = attrs[key];
+            el.setAttribute(realKey, val);
+        }
+    }
+    function assignDefs2Node(node, injectOpts) {
+        for (var opt in injectOpts) {
+            if (injectOpts.hasOwnProperty(opt)) {
+                var val = injectOpts[opt];
+                if (opt === 'style') setStyleNoOverride(node, val); else if (opt === 'attrs') setAttrsNoOverride(node, val); else node[opt] = val;
+            }
         }
     }
     function arrV2dom(root, defs, realRoot, injectOpts, start) {
         for (var i = 0; i < defs.length; i++) {
             var opts = defs[i];
-            if (injectOpts) assign3(opts, injectOpts);
-            setChildren(root, opts, realRoot, injectOpts, start);
+            if (isDom(opts)) {
+                assignDefs2Node(opts, injectOpts);
+                setChildren(root, opts, realRoot, injectOpts, start);
+            } else {
+                if (injectOpts) assign3(opts, injectOpts);
+                setChildren(root, opts, realRoot, injectOpts, start);
+            }
         }
     }
     function v2dom(root, defs, realRoot, injectOpts, start) {
@@ -470,7 +514,7 @@
     }
     function getNextDifferentElByKey(startEl, key) {
         if (startEl) {
-            if (startEl.__key !== key) return startEl; else return getNextDifferentElByKey(startEl.nextSibling, key);
+            if (!startEl.hasOwnProperty('__key') || startEl.__key !== key) return startEl; else return getNextDifferentElByKey(startEl.nextSibling, key);
         }
         return null;
     }
@@ -556,7 +600,8 @@
         for (var i = 0; i < attributes.length; i++) {
             var key = attributes[i];
             var val = attrs[key];
-            el.setAttribute(c2d(key), val);
+            var realKey = c2d(key);
+            el.setAttribute(realKey, val);
         }
     }
     var pxStyle = [ 'width', 'height', 'maxWidth', 'minWidth', 'maxHeight', 'minHeight' ];
@@ -686,15 +731,19 @@
         if (delayNoDisplay) el.style.display = 'none';
         return el;
     };
-    var Dominic = {
-        createElement: function(name, opts) {
-            return CreateElement(name, opts);
+    var Dominic = {};
+    defProps(Dominic, {
+        createElement: {
+            value: function(name, opts) {
+                return CreateElement(name, opts);
+            }
         },
-        setWindow: function(obj) {
-            win = obj;
-            doc = win.document;
-            Node = win.Node;
+        setWindow: {
+            value: function(obj) {
+                win = obj, doc = win.document;
+                Node = win.Node;
+            }
         }
-    };
+    });
     return Dominic;
 });
