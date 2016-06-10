@@ -23,7 +23,7 @@
         return count === length;
     };
     var areDom = function(objs) {
-        if (!Array.isArray(obj)) return false;
+        if (!Array.isArray(objs)) return false;
         var count = 0, length = objs.length;
         for (var i = 0; i < length; i++) count += objs[i] instanceof Node ? 1 : 0;
         return count === length;
@@ -341,8 +341,10 @@
         }
         function removeEls(els, root) {
             forEach(els, function(el, elIdx) {
-                removeAllEvts(el);
-                removeAllRefs(el, root);
+                if (el.nodeType === Node.ELEMENT_NODE) {
+                    removeAllEvts(el);
+                    removeAllRefs(el, root);
+                }
                 el.parentNode.removeChild(el);
             });
         }
@@ -368,7 +370,7 @@
                             this.__data[obsProp] = val;
                             cacheOpts.for = val;
                             var tobeRemoved = map(root.childNodes, function(node) {
-                                return node.__key === thisTplKey;
+                                return node.hasOwnProperty('__key') && node.__key === thisTplKey;
                             });
                             var toStartEl;
                             var shouldRemoveAfterAppend = false;
@@ -485,6 +487,9 @@
             }
         }
     }
+    function assignDefs2NodeList(nodes, injectOpts) {
+        for (var i = 0; i < nodes.length; i++) assignDefs2Node(nodes[i], injectOpts);
+    }
     function arrV2dom(root, defs, realRoot, injectOpts, start) {
         for (var i = 0; i < defs.length; i++) {
             var opts = defs[i];
@@ -531,6 +536,7 @@
         if (!obj) return;
         if (isStrOrNum(obj)) {
             var textNode = doc.createTextNode(obj);
+            assignDefs2Node(textNode, injectOpts);
             if (start && start.startEl) {
                 insertAfter(root, textNode, start);
                 start.startEl = textNode;
