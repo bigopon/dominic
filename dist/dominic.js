@@ -45,6 +45,17 @@
     function forEach(nodeList, expression, thisArg) {
         if (nodeList) for (var i = 0; i < nodeList.length; i++) expression.call(thisArg, nodeList[i], i);
     }
+    function map(nodeList, expression, thisArg) {
+        if (nodeList) {
+            var result = [];
+            for (var i = 0; i < nodeList.length; i++) {
+                var node = nodeList[i];
+                if (expression.call(thisArg, node, i)) result.push(node);
+            }
+            return result;
+        }
+        return null;
+    }
     function indexOf(el, nodeList) {
         return Array.prototype.indexOf.call(nodeList, el);
     }
@@ -337,9 +348,7 @@
                     if (!obsProp || obsProp === '__owner' || !isStrOrNum(obsProp)) return;
                     var thisTplKey = specialKey++ + '';
                     var defaultOpts = assign({
-                        attrs: {
-                            dataTk: thisTplKey
-                        }
+                        __key: thisTplKey
                     }, injectOpts);
                     var cacheOpts = assign2({}, opts, {
                         obsProp: obsProp
@@ -352,7 +361,9 @@
                             var obsProp = cacheOpts.obsProp;
                             this.__data[obsProp] = val;
                             cacheOpts.for = val;
-                            var tobeRemoved = root.querySelectorAll('[data-tk="' + thisTplKey + '"]');
+                            var tobeRemoved = map(root.childNodes, function(node) {
+                                return node.__key === thisTplKey;
+                            });
                             var toStartEl;
                             var shouldRemoveAfterAppend = false;
                             if (tobeRemoved.length) {
@@ -458,15 +469,15 @@
         }
     }
     function getNextDifferentElByKey(startEl, key) {
-        while (startEl) {
-            if (startEl.getAttribute('data-tk') !== key) return startEl; else return getNextDifferentElByKey(startEl.nextSibling, key);
+        if (startEl) {
+            if (startEl.__key !== key) return startEl; else return getNextDifferentElByKey(startEl.nextSibling, key);
         }
         return null;
     }
     function insertAfter(root, el, start) {
         var nextEl = start.startEl.nextSibling;
         if (!nextEl) root.appendChild(el); else {
-            var elKey = el.getAttribute('data-tk');
+            var elKey = el.__key;
             var tailEl = getNextDifferentElByKey(nextEl, elKey);
             if (tailEl) root.insertBefore(el, tailEl); else root.appendChild(el);
         }
