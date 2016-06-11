@@ -262,17 +262,21 @@ var root = Dominic.createElement('div', {
     { tag: 'div', width: 200, background: 'lightgreen',
       items: [
        { tag: 'div', className: 'red', width: 20, height: 20, background: 'red',
+         // normal click handler
          click: {
            handler: function (e) {
-             console.log('This is:', this.localName + '.' + this.className) // div.red
+             // div.red
+             console.log('This is:', this.localName + '.' + this.className)
            }
          }
        },
        { tag: 'div', className: 'orange', width: 20, height: 20, background: 'orange',
          click: {
+           // change scope to root element
            scope: 'root',
            handler: function (e) {
-             console.log('This is:', this.localName + '.' + this.className) // div.root
+             // div.root
+             console.log('This is:', this.localName + '.' + this.className)
            }
          },
          events: [
@@ -425,7 +429,7 @@ var root = Dominic.createElement('div', {
     },
     items: [
       { for: { a: 5, b: 6, c: 7},
-        update: { observeProp: 'data1' } ,
+        observeProp: 'data1',
         alwaysIterate: true,
         // value & key instead value & index
         tplFn: function (v, key) {
@@ -435,7 +439,7 @@ var root = Dominic.createElement('div', {
       { xCls: 'sidebar' },
       { xtraCls: 'main', items: {
         for: [5,6,7,8],
-        update: { observeProp: 'data2' },
+        observeProp: 'data2',
         tplFn: function (v) { return v }
       }},
     ]
@@ -471,10 +475,8 @@ var root = Dominic.createElement('div', {
   items: {
     // data source
     for: null,
-    update: {
-      // update this when root.observe.data = src
-      observeProp: 'data'
-    },
+    // update this when root.observe.data = src
+    observeProp: 'data',
     tplFn: function (item, itemIdx) {
       return { tag: 'div', text: item.name, padding: 5, margin: '5px 0 0 5px', background: 'tomato',
         items: {
@@ -530,14 +532,14 @@ npm i dominic
 ## API
 
 1. Create new DOM element
-```javascript
-/**
- * @param {String} name tag name of the root dom element
- * @param {Object} opts options for root element, className, id, children etc... 
- * @return {DOM}
- */
-Dominic.createElement(name, opts)
-```
+  ```javascript
+  /**
+   * @param {String} name tag name of the root dom element
+   * @param {Object} opts options for root element, className, id, children etc... 
+   * @return {DOM}
+   */
+  Dominic.createElement(name, opts)
+  ```
 2. `For Node:` Change global window object
 ```javascript
 Dominic.setWindow(windowObj)
@@ -562,6 +564,7 @@ console.log('' + root)
 ```
 
 ## Plan
+- [ ] Have diffing when updating in template
 - [ ] Have basic layouts: `facebook`, `twitter`, `pinterest`
 - [ ] Have basic components: `tab`, `combobox`, `table` 
 

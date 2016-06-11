@@ -1,6 +1,6 @@
 {
   "name": "dominic",
-  "version": "0.1.36",
+  "version": "0.1.37",
   "description": "Helper to quickly build up DOM in simple javascript object format.",
   "scripts": [
     "dominic.js"

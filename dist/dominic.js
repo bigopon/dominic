@@ -39,6 +39,12 @@
         var valType = typeof val;
         return valType === 'string' || valType === 'number';
     };
+    var areStrOrNum = function(vals) {
+        if (!Array.isArray(vals)) return false;
+        var count = 0, length = objs.length;
+        for (var i = 0; i < length; i++) count += isStrOrNum(vals[i]) ? 1 : 0;
+        return count === length;
+    };
     var isFn = function(val) {
         return typeof val === 'function';
     };
@@ -48,6 +54,17 @@
     var cap = function(str) {
         return str[0].toUpperCase() + str.slice(1);
     };
+    var hasOwnProperty = Object.prototype.hasOwnProperty;
+    function extend(destArr) {
+        destArr = destArr || [];
+        if (arguments.length < 2) return destArr;
+        var currIdx = destArr.length;
+        for (var i = 1; i < arguments.length; i++) {
+            var src = arguments[i];
+            for (var j = 0; j < src.length; j++) destArr[currIdx++] = src[j];
+        }
+        return destArr;
+    }
     function forEach(nodeList, expression, thisArg) {
         if (nodeList) for (var i = 0; i < nodeList.length; i++) expression.call(thisArg, nodeList[i], i);
     }
@@ -121,9 +138,43 @@
         var selector = dom.localName + id + (classes.length ? '.' + classes.join('.') : '');
         return selector;
     }
+    function queryAllDirect(root, key, value) {
+        var result = [], childNodes = root.childNodes, length = childNodes.length;
+        for (var i = 0; i < length; i++) {
+            var child = childNodes[i];
+            if (child.hasOwnProperty(key) && child[key] === value) result[result.length] = child;
+        }
+        return result;
+    }
+    function queryAll(root, key, value) {
+        var result = [], childNodes = root.childNodes, length = childNodes.length;
+        for (var i = 0; i < length; i++) {
+            var child = childNodes[i];
+            if (child.hasOwnProperty(key) && child[key] === value) result[result.length] = child;
+            extend(result, queryAll(child, key, value));
+        }
+        return result;
+    }
+    function queryAllByMultipleKeys(root, dict) {
+        if (!dict) return;
+        var keys = Object.keys(dict), keyLen = keys.length, result = [], childNodes = root.childNodes, length = childNodes.length, resultIdx = 0;
+        for (var i = 0; i < length; i++) {
+            var child = childNodes[i];
+            for (var j = 0; j < keyLen; j++) {
+                var key = keys[j];
+                if (hasOwnProperty.call(child, key) && child[key] === dict[key]) {
+                    result[resultIdx++] = child;
+                    break;
+                }
+            }
+            extend(result, queryAllByMultipleKeys(child, dict));
+        }
+    }
+    var elP = window.HTMLElement.prototype;
+    var matchesSelector = elP.matches || elP.msMatchesSelector || elP.webkitMatchesSelector || elP.mozMatchesSelector || elP.oMatchesSelector;
     function walkUpAndFindMatch(dest, current, selector) {
         while (current && current !== dest) {
-            if (current.matches(selector)) return current;
+            if (matchesSelector.call(current, selector)) return current;
             current = current.parentNode;
         }
         return null;
@@ -167,7 +218,9 @@
         var capture = opts.capture;
         var delegate = opts.delegate;
         var keys;
-        if (typeof opts.key === 'number') keys = [ opts.key ]; else if (are(opts.key, 'number')) keys = opts.key;
+        if (hasOwnProperty(opts, 'key')) {
+            if (typeof opts.key === 'number') keys = [ opts.key ]; else if (are(opts.key, 'number')) keys = opts.key;
+        }
         var handler = function(event) {
             var el = event.currentTarget;
             if (typeof delegate === 'string') {
@@ -261,7 +314,7 @@
             },
             removeRef: {
                 value: function(refName) {
-                    if (this.hasOwnProperty(refName)) return delete this[refName];
+                    if (hasOwnProperty.call(this, refName)) return delete this[refName];
                     return false;
                 }
             },
@@ -282,7 +335,7 @@
         var scope = refScope === 'parent' ? root : realRoot;
         scope.refs = scope.refs || new Refs();
         scope.refs[ref] = el;
-        el.setAttribute('data-hr', refScope === 'parent' ? 'pr' : 'rr');
+        el['__hr'] = true;
     }
     var Obs = function() {
         var Obs = function(realRoot) {
@@ -308,33 +361,21 @@
             delete el.evts;
         }
         function removeAllEvts(el) {
-            if (el.evts) removeEvt(el);
-            var hasEvtCEl = el.querySelectorAll('[data-he]');
-            forEach(hasEvtCEl, removeEvt);
-        }
-        function removeAllRefInParent(el) {
-            var parent = el.parentNode;
-            if (parent.refs) {
-                parent.refs.removeAll();
-                delete parent.refs;
-            }
-        }
-        function removeRefInRoot(el, root) {
-            if (root.refs) root.refs.remove(function(refdEl, key) {
-                return el === refdEl || el.contains(refdEl);
-            });
+            if (hasOwnProperty.call(el, 'evts')) removeEvt(el);
+            var hasEvtEls = queryAll(el, '__he', true);
+            forEach(hasEvtEls, removeEvt);
         }
         function removeRef(el, root) {
-            var elRefType = el.getAttribute('data-hr');
-            if (elRefType === 'pr') removeAllRefInParent(el); else if (elRefType === 'rr') removeRefInRoot(el, root);
+            var elRefType = hasOwnProperty.call(el, 'refScope') && el.refScope === 'parent' ? 'p' : 'r';
+            if (elRefType === 'p') el.parentNode.refs.removeRef(el.ref); else root.refs.removeRef(el.ref);
         }
         function removeAllRefs(el, root) {
-            if (el.refs) {
+            if (hasOwnProperty.call(el, 'refs')) {
                 el.refs.removeAll();
                 delete el.refs;
             }
-            removeRef(el, root);
-            var hasRefEls = el.querySelectorAll('[data-hr]');
+            if (hasOwnProperty.call(el, 'ref')) removeRef(el, root);
+            var hasRefEls = queryAll(el, '__hr', true);
             forEach(hasRefEls, function(hasRefEl) {
                 removeRef(hasRefEl, root);
             });
@@ -342,8 +383,8 @@
         function removeEls(els, root) {
             forEach(els, function(el, elIdx) {
                 if (el.nodeType === Node.ELEMENT_NODE) {
-                    removeAllEvts(el);
                     removeAllRefs(el, root);
+                    removeAllEvts(el);
                 }
                 el.parentNode.removeChild(el);
             });
@@ -352,15 +393,15 @@
         defProps(Obs.prototype, {
             add: {
                 value: function(root, opts, injectOpts) {
-                    var obsProp = opts.update ? opts.update.observeProp : '';
-                    if (!obsProp || obsProp === '__owner' || !isStrOrNum(obsProp)) return;
+                    var obsProp = opts.observeProp;
+                    if (!obsProp || obsProp === '__owner') return;
                     var thisTplKey = specialKey++ + '';
                     var defaultOpts = assign({
                         __key: thisTplKey
                     }, injectOpts);
                     var cacheOpts = assign2({}, opts, {
                         obsProp: obsProp
-                    }, 'tplFn,for,root,obsProp,update,alwaysIterate');
+                    }, 'tplFn,for,root,observeProp,alwaysIterate');
                     defProp(this, obsProp, {
                         get: function(observeProperty) {
                             return this.__data[observeProperty];
@@ -369,9 +410,7 @@
                             var obsProp = cacheOpts.obsProp;
                             this.__data[obsProp] = val;
                             cacheOpts.for = val;
-                            var tobeRemoved = map(root.childNodes, function(node) {
-                                return node.hasOwnProperty('__key') && node.__key === thisTplKey;
-                            });
+                            var tobeRemoved = queryAllDirect(root, '__key', thisTplKey);
                             var toStartEl;
                             var shouldRemoveAfterAppend = false;
                             if (tobeRemoved.length) {
@@ -446,8 +485,8 @@
         }
     }
     function for2dom(root, defs, realRoot, injectOpts, start) {
-        if (isObj(defs.update)) {
-            var obsProp = defs.update.observeProp;
+        if (hasOwnProperty.call(defs, 'observeProp')) {
+            var obsProp = defs.observeProp;
             if (isStrOrNum(obsProp)) {
                 var observer = setObserver(root, defs, realRoot, injectOpts);
                 observer[obsProp] = defs.for;
@@ -461,12 +500,12 @@
         }
     }
     function setStyleNoOverride(el, opts) {
-        var styles = Object.keys(opts);
+        var styles = Object.keys(opts), elStyle = el.style;
         for (var i = 0; i < styles.length; i++) {
             var styleKey = styles[i];
-            if (el.style[styleKey] !== '') continue;
+            if (elStyle[styleKey] !== '') continue;
             var styleVal = opts[styleKey];
-            if (pxStyle.indexOf(styleKey) !== -1) el.style[styleKey] = isNaN(styleVal) ? styleVal : styleVal + 'px'; else el.style[styleKey] = styleVal;
+            if (pxStyle.indexOf(styleKey) !== -1) elStyle[styleKey] = isNaN(styleVal) ? styleVal : styleVal + 'px'; else elStyle[styleKey] = styleVal;
         }
     }
     function setAttrsNoOverride(el, attrs) {
@@ -497,7 +536,7 @@
                 assignDefs2Node(opts, injectOpts);
                 setChildren(root, opts, realRoot, injectOpts, start);
             } else {
-                if (injectOpts) assign3(opts, injectOpts);
+                if (injectOpts && !isStrOrNum(opts)) assign3(opts, injectOpts);
                 setChildren(root, opts, realRoot, injectOpts, start);
             }
         }
@@ -519,7 +558,7 @@
     }
     function getNextDifferentElByKey(startEl, key) {
         if (startEl) {
-            if (!startEl.hasOwnProperty('__key') || startEl.__key !== key) return startEl; else return getNextDifferentElByKey(startEl.nextSibling, key);
+            if (!hasOwnProperty.call(startEl, '__key') || startEl.__key !== key) return startEl; else return getNextDifferentElByKey(startEl.nextSibling, key);
         }
         return null;
     }
@@ -557,9 +596,9 @@
             } else if (Array.isArray(obj)) {
                 arrV2dom.apply(null, arguments);
             } else {
-                if (obj.hasOwnProperty('for')) {
+                if (hasOwnProperty.call(obj, 'for')) {
                     for2dom.apply(null, arguments);
-                } else if (obj.hasOwnProperty('fn')) {
+                } else if (hasOwnProperty.call(obj, 'fn')) {
                     fn2dom.apply(null, arguments);
                 } else {
                     v2dom.apply(null, arguments);
@@ -596,7 +635,7 @@
         }, scope);
         if (el) el.evts = el.evts || new Evt();
         el.evts.push(evtHandler);
-        if (el.hasAttribute('data-he') == false) el.setAttribute('data-he', '');
+        el.__he = true;
     }
     function setEvents(el, eventArgs, realRoot) {
         if (Array.isArray(eventArgs)) for (var i = 0; i < eventArgs.length; i++) attachEvent(el, eventArgs[i], realRoot); else attachEvent(el, eventArgs, realRoot);
@@ -616,11 +655,11 @@
         pxStyle.push('margin' + pos);
     });
     function setStyle(el, opts) {
-        var styles = Object.keys(opts);
+        var styles = Object.keys(opts), elStyle = el.style;
         for (var i = 0; i < styles.length; i++) {
             var styleKey = styles[i];
             var styleVal = opts[styleKey];
-            if (pxStyle.indexOf(styleKey) !== -1) el.style[styleKey] = isNaN(styleVal) ? styleVal : styleVal + 'px'; else el.style[styleKey] = styleVal;
+            if (pxStyle.indexOf(styleKey) !== -1) elStyle[styleKey] = isNaN(styleVal) ? styleVal : styleVal + 'px'; else elStyle[styleKey] = styleVal;
         }
     }
     var setters = {
@@ -691,6 +730,7 @@
         var delayRoot;
         var injectOpts;
         var delayNoDisplay;
+        var elStyle = el.style;
         if (defs.hasOwnProperty('hide') && evalIf(defs.hide)) {
             delayNoDisplay = true;
         }
@@ -700,9 +740,9 @@
             var keyIdx = allChecks.indexOf(key);
             if (keyIdx == -1) el[key] = val; else {
                 if (keyIdx < dimRange) {
-                    el.style[key] = isNaN(val) ? val : val + 'px';
+                    elStyle = isNaN(val) ? val : val + 'px';
                 } else if (keyIdx < disRange) {
-                    el.style[key] = val;
+                    elStyle = val;
                 } else if (keyIdx < shareRange) {
                     assign(injectOpts = injectOpts || {}, val);
                 } else if (keyIdx < fnRange) {
