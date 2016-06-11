@@ -138,11 +138,20 @@
         var selector = dom.localName + id + (classes.length ? '.' + classes.join('.') : '');
         return selector;
     }
+    function query(root, key, value) {
+        var result = null, childNodes = root.childNodes, len = childNodes.length;
+        for (var i = 0; i < len; i++) {
+            var child = childNodes[i];
+            if (hasOwnProperty.call(child, key) && (typeof value === 'undefined' || child[key] === value)) result = child; else result = query(child, key, value);
+            if (result) return result;
+        }
+        return result;
+    }
     function queryAllDirect(root, key, value) {
         var result = [], childNodes = root.childNodes, length = childNodes.length;
         for (var i = 0; i < length; i++) {
             var child = childNodes[i];
-            if (child.hasOwnProperty(key) && child[key] === value) result[result.length] = child;
+            if (hasOwnProperty.call(child, key) && child[key] === value) result[result.length] = child;
         }
         return result;
     }
@@ -672,6 +681,7 @@
     function setDelaySetups(el, setups, root, injectOpts) {
         for (var i = 0, length = setups.length; i < length; i++) {
             var setup = setups[i];
+            console.log(setup);
             setters['set' + setup.key](el, setup.val, root, injectOpts);
         }
     }
@@ -740,9 +750,9 @@
             var keyIdx = allChecks.indexOf(key);
             if (keyIdx == -1) el[key] = val; else {
                 if (keyIdx < dimRange) {
-                    elStyle = isNaN(val) ? val : val + 'px';
+                    elStyle[key] = isNaN(val) ? val : val + 'px';
                 } else if (keyIdx < disRange) {
-                    elStyle = val;
+                    elStyle[key] = val;
                 } else if (keyIdx < shareRange) {
                     assign(injectOpts = injectOpts || {}, val);
                 } else if (keyIdx < fnRange) {
@@ -774,14 +784,16 @@
             delayRoot.appendChild(el);
             if (delayCb && typeof delayCb.appended === 'function') delayCb.appended.call(el, delayRoot);
         }
-        if (delayNoDisplay) el.style.display = 'none';
+        if (delayNoDisplay) elStyle.display = 'none';
         return el;
     };
     var Dominic = {};
     defProps(Dominic, {
         createElement: {
             value: function(name, opts) {
-                return CreateElement(name, opts);
+                var firstArgType = typeof name;
+                if (firstArgType === 'number') throw Error('Invalid element tag name');
+                if (firstArgType === 'string') return CreateElement(name, opts); else return CreateElement('div', name);
             }
         },
         setWindow: {

@@ -532,14 +532,14 @@ npm i dominic
 ## API
 
 1. Create new DOM element
-  ```javascript
-  /**
-   * @param {String} name tag name of the root dom element
-   * @param {Object} opts options for root element, className, id, children etc... 
-   * @return {DOM}
-   */
-  Dominic.createElement(name, opts)
-  ```
+```javascript
+/**
+ * @param {String} name tag name of the root dom element
+ * @param {Object} opts options for root element, className, id, children etc... 
+ * @return {DOM}
+ */
+Dominic.createElement(name, opts)
+```
 2. `For Node:` Change global window object
 ```javascript
 Dominic.setWindow(windowObj)
