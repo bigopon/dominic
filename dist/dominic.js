@@ -681,7 +681,6 @@
     function setDelaySetups(el, setups, root, injectOpts) {
         for (var i = 0, length = setups.length; i < length; i++) {
             var setup = setups[i];
-            console.log(setup);
             setters['set' + setup.key](el, setup.val, root, injectOpts);
         }
     }
