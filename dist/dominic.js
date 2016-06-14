@@ -11,7 +11,7 @@
     var doc = win.document;
     var Node = win.Node;
     var fakeArray = [];
-    var fakeOpts = {};
+    var fakeOpts = {}, toString = fakeOpts.__proto__.toString, hasOwn = fakeOpts.__proto__.hasOwnProperty;
     var fakeObj = fakeOpts;
     var is = function(obj, type) {
         return typeof obj === type;
@@ -41,7 +41,7 @@
     };
     var areStrOrNum = function(vals) {
         if (!Array.isArray(vals)) return false;
-        var count = 0, length = objs.length;
+        var count = 0, length = vals.length;
         for (var i = 0; i < length; i++) count += isStrOrNum(vals[i]) ? 1 : 0;
         return count === length;
     };
@@ -49,12 +49,15 @@
         return typeof val === 'function';
     };
     var c2d = function(str) {
-        return str.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+        return str.replace(/([A-Z])/g, '-$1').toLowerCase();
     };
     var cap = function(str) {
         return str[0].toUpperCase() + str.slice(1);
     };
     var hasOwnProperty = Object.prototype.hasOwnProperty;
+    function isPlainObject(obj) {
+        return toString.call(obj) === '[object Object]';
+    }
     function extend(destArr) {
         destArr = destArr || [];
         if (arguments.length < 2) return destArr;
@@ -123,7 +126,7 @@
             for (var j = 0; j < keys.length; j++) {
                 var key = keys[j];
                 if (Array.isArray(dest)) {
-                    for (k = 0; k < dest.length; k++) if (!dest[k].hasOwnProperty(key)) dest[k][key] = src[key];
+                    for (var k = 0; k < dest.length; k++) if (!dest[k].hasOwnProperty(key)) dest[k][key] = src[key];
                 } else {
                     if (!dest.hasOwnProperty(key)) dest[key] = src[key];
                 }
@@ -147,6 +150,14 @@
         }
         return result;
     }
+    function queryDirect(root, key, value) {
+        var childNodes = root.childNodes, len = childNodes.length;
+        for (var i = 0; i < len; i++) {
+            var child = childNodes[i];
+            if (hasOwnProperty.call(child, key) && (typeof value === 'undefined' || child[key] === value)) return child;
+        }
+        return null;
+    }
     function queryAllDirect(root, key, value) {
         var result = [], childNodes = root.childNodes, length = childNodes.length;
         for (var i = 0; i < length; i++) {
@@ -159,7 +170,7 @@
         var result = [], childNodes = root.childNodes, length = childNodes.length;
         for (var i = 0; i < length; i++) {
             var child = childNodes[i];
-            if (child.hasOwnProperty(key) && child[key] === value) result[result.length] = child;
+            if (hasOwnProperty.call(child, key) && child[key] === value) result[result.length] = child;
             extend(result, queryAll(child, key, value));
         }
         return result;
@@ -179,8 +190,12 @@
             extend(result, queryAllByMultipleKeys(child, dict));
         }
     }
-    var elP = window.HTMLElement.prototype;
-    var matchesSelector = elP.matches || elP.msMatchesSelector || elP.webkitMatchesSelector || elP.mozMatchesSelector || elP.oMatchesSelector;
+    var matchesSelector = function() {
+        var html = win.HTMLElement;
+        var elP = html ? html.prototype : {};
+        var matchesSelector = elP.matches || elP.matchesSelector || elP.msMatchesSelector || elP.webkitMatchesSelector || elP.mozMatchesSelector || elP.oMatchesSelector;
+        return matchesSelector;
+    }();
     function walkUpAndFindMatch(dest, current, selector) {
         while (current && current !== dest) {
             if (matchesSelector.call(current, selector)) return current;
@@ -398,6 +413,35 @@
                 el.parentNode.removeChild(el);
             });
         }
+        function handleSetter(root, cacheOpts, defaultOpts, thisTplKey, val) {
+            var obsProp = cacheOpts.obsProp;
+            this.__data[obsProp] = val;
+            cacheOpts.for = val;
+            var tobeRemoved = queryAllDirect(root, '__key', thisTplKey);
+            var toStartEl;
+            var shouldRemoveAfterAppend = false;
+            if (tobeRemoved.length) {
+                toStartEl = tobeRemoved[0].previousSibling;
+                if (toStartEl === null) {
+                    var currentChildNodes = root.childNodes;
+                    if (currentChildNodes.length > tobeRemoved.length) {
+                        toStartEl = root.insertBefore(doc.createElement('a'), currentChildNodes[0]);
+                        shouldRemoveAfterAppend = true;
+                    }
+                }
+                removeEls(tobeRemoved, this.__owner);
+            } else {
+                toStartEl = root.lastChild;
+            }
+            var newCFromTpl = tpl2dom(root, cacheOpts, this.__owner);
+            if (isDom(newCFromTpl)) {
+                assignDefs2Node(newCFromTpl, defaultOpts);
+            }
+            setChildren(root, newCFromTpl, this.__owner, defaultOpts, {
+                startEl: toStartEl
+            });
+            if (shouldRemoveAfterAppend) root.removeChild(toStartEl);
+        }
         var specialKey = Math.floor(Math.random() * 1e5);
         defProps(Obs.prototype, {
             add: {
@@ -410,40 +454,12 @@
                     }, injectOpts);
                     var cacheOpts = assign2({}, opts, {
                         obsProp: obsProp
-                    }, 'tplFn,for,root,observeProp,alwaysIterate');
+                    }, 'tplFn,scope,for,root,observeProp,alwaysIterate');
                     defProp(this, obsProp, {
                         get: function(observeProperty) {
                             return this.__data[observeProperty];
                         }.bind(this, obsProp),
-                        set: function(root, cacheOpts, defaultOpts, thisTplKey, val) {
-                            var obsProp = cacheOpts.obsProp;
-                            this.__data[obsProp] = val;
-                            cacheOpts.for = val;
-                            var tobeRemoved = queryAllDirect(root, '__key', thisTplKey);
-                            var toStartEl;
-                            var shouldRemoveAfterAppend = false;
-                            if (tobeRemoved.length) {
-                                toStartEl = tobeRemoved[0].previousSibling;
-                                if (toStartEl === null) {
-                                    var currentChildNodes = root.childNodes;
-                                    if (currentChildNodes.length > tobeRemoved.length) {
-                                        toStartEl = root.insertBefore(doc.createElement('a'), currentChildNodes[0]);
-                                        shouldRemoveAfterAppend = true;
-                                    }
-                                }
-                                removeEls(tobeRemoved, this.__owner);
-                            } else {
-                                toStartEl = root.lastChild;
-                            }
-                            var newCFromTpl = tpl2dom(root, cacheOpts, this.__owner);
-                            if (isDom(newCFromTpl)) {
-                                assignDefs2Node(newCFromTpl, defaultOpts);
-                            }
-                            setChildren(root, newCFromTpl, this.__owner, defaultOpts, {
-                                startEl: toStartEl
-                            });
-                            if (shouldRemoveAfterAppend) root.removeChild(toStartEl);
-                        }.bind(this, root, cacheOpts, defaultOpts, thisTplKey)
+                        set: handleSetter.bind(this, root, cacheOpts, defaultOpts, thisTplKey)
                     });
                 }
             },
@@ -779,15 +795,26 @@
         if (delayClasses) el.className += (' ' + delayClasses).trim();
         if (delayEvts) setDelayEvts(el, delayEvts, root);
         if (delayCb && typeof delayCb.created === 'function') delayCb.created.call(el);
-        if (delayRoot && isDom(delayRoot) && el === root) {
-            delayRoot.appendChild(el);
-            if (delayCb && typeof delayCb.appended === 'function') delayCb.appended.call(el, delayRoot);
+        if (el === root) {
+            if (delayRoot && isDom(delayRoot)) {
+                delayRoot.appendChild(el);
+                if (delayCb && typeof delayCb.appended === 'function') delayCb.appended.call(el, delayRoot);
+            }
+        } else {
+            el.root = root;
         }
         if (delayNoDisplay) elStyle.display = 'none';
         return el;
     };
-    var Dominic = {};
+    var Dominic = {
+        __proto__: null
+    };
     defProps(Dominic, {
+        isPlainObject: {
+            value: function(obj) {
+                return isPlainObject(obj);
+            }
+        },
         createElement: {
             value: function(name, opts) {
                 var firstArgType = typeof name;
@@ -795,11 +822,44 @@
                 if (firstArgType === 'string') return CreateElement(name, opts); else return CreateElement('div', name);
             }
         },
+        handleEvent: {
+            value: function(el, opts, thisArg) {
+                var realThis = el;
+                if (thisArg === 'root') realThis = el.root || el; else if (typeof thisArg !== 'undefined') realThis = thisArg;
+                if (isPlainObject(opts)) {
+                    var evtTypes = Object.keys(opts);
+                    var evts = [];
+                    for (var i = 0; i < evtTypes.length; i++) {
+                        var eType = evtTypes[i];
+                        var evtOpts = opts[eType];
+                        evts.push({
+                            key: eType,
+                            val: evtOpts
+                        });
+                        setters['setevents'](el, assign({
+                            type: eType
+                        }, evtOpts), realThis);
+                    }
+                } else setters['setevents'](el, opts, realThis);
+            }
+        },
         setWindow: {
             value: function(obj) {
                 win = obj, doc = win.document;
                 Node = win.Node;
             }
+        },
+        queryAll: {
+            value: queryAll
+        },
+        queryAllDirect: {
+            value: queryAllDirect
+        },
+        query: {
+            value: query
+        },
+        queryDirect: {
+            value: queryDirect
         }
     });
     return Dominic;
