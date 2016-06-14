@@ -242,7 +242,7 @@
         var capture = opts.capture;
         var delegate = opts.delegate;
         var keys;
-        if (hasOwnProperty(opts, 'key')) {
+        if (hasOwnProperty.call(opts, 'key')) {
             if (typeof opts.key === 'number') keys = [ opts.key ]; else if (are(opts.key, 'number')) keys = opts.key;
         }
         var handler = function(event) {
@@ -414,7 +414,7 @@
             });
         }
         function handleSetter(root, cacheOpts, defaultOpts, thisTplKey, val) {
-            var obsProp = cacheOpts.obsProp;
+            var obsProp = cacheOpts.observeProp;
             this.__data[obsProp] = val;
             cacheOpts.for = val;
             var tobeRemoved = queryAllDirect(root, '__key', thisTplKey);
@@ -452,9 +452,7 @@
                     var defaultOpts = assign({
                         __key: thisTplKey
                     }, injectOpts);
-                    var cacheOpts = assign2({}, opts, {
-                        obsProp: obsProp
-                    }, 'tplFn,scope,for,root,observeProp,alwaysIterate');
+                    var cacheOpts = assign2({}, opts, 'tplFn,scope,for,root,observeProp,alwaysIterate');
                     defProp(this, obsProp, {
                         get: function(observeProperty) {
                             return this.__data[observeProperty];
