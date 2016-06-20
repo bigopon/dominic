@@ -1,0 +1,10 @@
+.vscode/
+node_modules
+bower_components
+.tmp
+.publish/
+/jsconfig.json
+test
+webpack.config.js
+rollup.config.js
+server.js

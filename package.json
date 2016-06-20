@@ -1,0 +1,37 @@
+{
+  "name": "dominic",
+  "version": "0.1.42",
+  "description": "Helper to quickly build up DOM in simple javascript object format.",
+  "main": "dist/dominic.js",
+  "scripts": {
+    "test": "test",
+    "minify": "uglifyjs dist/dominic.js -o dist/dominic.min.js -c dead_code,unused,booleans,loops,join_vars,drop_debugger,drop_console,sequences -m",
+    "build": "rollup -c && npm run minify ",
+    "prepublish": "npm run build"
+  },
+  "keywords": [
+    "DOM",
+    "dom",
+    "helper",
+    "quickdom",
+    "dominic"
+  ],
+  "author": "bigopon <bigopon.777@gmail.com> (http://bigopon.surge.sh)",
+  "license": "MIT",
+  "repository": {
+    "url": "bigopon/dominic",
+    "type": "git"
+  },
+  "devDependencies": {
+    "babel": "^6.5.2",
+    "babel-loader": "^6.2.4",
+    "babel-plugin-transform-es2015-modules-simple-commonjs": "^0.3.0",
+    "babel-preset-es2015": "^6.9.0",
+    "babel-preset-es2015-rollup": "^1.1.1",
+    "rollup": "^0.31.2",
+    "rollup-plugin-babel": "^2.5.1",
+    "rollup-watch": "^2.4.0",
+    "webpack": "^1.13.1",
+    "webpack-dev-server": "^1.14.1"
+  }
+}
