@@ -1,6 +1,6 @@
 ## Dominic
 Helper to quickly build up dom in javascript object format
-* v.0.1.42 contains breaking changes. See changelog
+* v.0.1.42 contains breaking changes. See [changelog](https://github.com/bigopon/dominic/blob/master/CHANGELOG.md "v.0.1.42 changelog")
 
 Basic feature list:
 
@@ -11,7 +11,6 @@ Basic feature list:
  * Template by function
  * Components
  * ~~Server side render to Html (with helper, see API)~~ (temporarily)
- * Template by function
 
 
 And here's some code! :+1:
@@ -543,7 +542,7 @@ root.observe.push('data', {
      * If index is absent, insert at the end, same behavior with push
      * @param index? {int}
      */
-    root.observe.insert(observeProperty, data)
+    root.observe.insert(observeProperty, index, data)
     /**
      * @param indexes {int[] | int}
      */
@@ -559,7 +558,7 @@ root.observe.push('data', {
 #### Component (v.0.1.42)
 #### Basic 1
 ```javascript
-var Input = Dominic.register('input', function Input(defs) {
+Dominic.register('input', function Input(defs) {
     return {
         tag: 'label',
         parent: defs.parent,
@@ -581,7 +580,7 @@ Dominic.create({
 #### Basic 2
 ```javascript
 // Define
-var Input = Dominic.register('input', function Input(defs) {
+Dominic.register('input', function Input(defs) {
     return {
         tag: 'label',
         display: 'block',
@@ -592,7 +591,7 @@ var Input = Dominic.register('input', function Input(defs) {
     }
 })
 // Define
-var Tab = Dominic.register('tab', function Tab(defs) {
+Dominic.register('tab', function Tab(defs) {
     var configs = {
         cls: 'd-tab-ct',
         parent: defs.parent,
@@ -664,13 +663,21 @@ npm i dominic
 
 ## API
 
-1. Create new DOM element
+  1. Create new DOM element
 ```javascript
 /**
  * @param defs {Object} opts options for root element, className, id, children etc... 
  * @return {DOM}
  */
 Dominic.create(defs)
+```
+  2. Register a component
+```javascript
+/**
+ * @param name {string} component name
+ * @param fn {Function} function used by dominic to create component. should return an definition object
+ */
+Dominic.register(name, fn)
 ```
 
 ## Plan
