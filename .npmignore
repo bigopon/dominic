@@ -5,11 +5,15 @@ _site
 .eslintignore
 .eslintrc
 .npmignore
+<<<<<<< HEAD
 .gitignore
+=======
+>>>>>>> b4fa2e49bee556848df2b70fcba328b6bb16de00
 .travis.yml
 book.json
 bower.json
 jsconfig.json
+<<<<<<< HEAD
 .vscode/
 coverage
 docs
@@ -18,3 +22,12 @@ test
 webpack.config.js
 server.js
 rollup.config.js
+=======
+coverage
+dist
+docs
+examples
+src
+test
+webpack.config.js
+>>>>>>> b4fa2e49bee556848df2b70fcba328b6bb16de00

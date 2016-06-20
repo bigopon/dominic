@@ -1,10 +1,17 @@
+<<<<<<< HEAD
 .vscode/
+=======
+>>>>>>> b4fa2e49bee556848df2b70fcba328b6bb16de00
 node_modules
 bower_components
 .tmp
 .publish/
+<<<<<<< HEAD
 /jsconfig.json
 test
 webpack.config.js
 rollup.config.js
 server.js
+=======
+/jsconfig.json
+>>>>>>> b4fa2e49bee556848df2b70fcba328b6bb16de00

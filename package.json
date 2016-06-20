@@ -1,5 +1,6 @@
 {
   "name": "dominic",
+<<<<<<< HEAD
   "version": "0.1.42",
   "description": "Helper to quickly build up DOM in simple javascript object format.",
   "main": "dist/dominic.js",
@@ -8,6 +9,16 @@
     "minify": "uglifyjs dist/dominic.js -o dist/dominic.min.js -c dead_code,unused,booleans,loops,join_vars,drop_debugger,drop_console,sequences -m",
     "build": "rollup -c && npm run minify ",
     "prepublish": "npm run build"
+=======
+  "version": "0.1.41",
+  "description": "Helper to quickly build up DOM in simple javascript object format.",
+  "main": "dominic.js",
+  "scripts": {
+    "test": "test",
+    "beautify": "uglifyjs lib/index.js -o dist/dominic.js -b space-colon=true,semicolons=false,quote_style=1,indent-level=4",
+    "minify": "uglifyjs lib/index.js -o dist/dominic.min.js -c dead_code,unused,booleans,loops,join_vars,drop_debugger,drop_console,sequences -m",
+    "prepublish": "npm run beautify && npm run minify"
+>>>>>>> b4fa2e49bee556848df2b70fcba328b6bb16de00
   },
   "keywords": [
     "DOM",
@@ -21,6 +32,7 @@
   "repository": {
     "url": "bigopon/dominic",
     "type": "git"
+<<<<<<< HEAD
   },
   "devDependencies": {
     "babel": "^6.5.2",
@@ -33,5 +45,7 @@
     "rollup-watch": "^2.4.0",
     "webpack": "^1.13.1",
     "webpack-dev-server": "^1.14.1"
+=======
+>>>>>>> b4fa2e49bee556848df2b70fcba328b6bb16de00
   }
 }
