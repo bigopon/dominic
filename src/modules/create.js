@@ -1,5 +1,5 @@
 import { has, createDict, defProp, defProps, isPlain, getKeys } from './object'
-import { isDom, isArray, isStrOrNum } from './check'
+import { isDom, isArray, isStrOrNum, isFn } from './check'
 import { toStringNode, toBool, c2d } from './util'
 import { each, every, map } from './collection'
 import { setObserver } from './observer'
@@ -189,10 +189,11 @@ function setCls(el) {
     if (!elSetups || !has(elSetups, 'cls') || !elSetups.cls) return
     el.className = elSetups.cls.trim()
 }
-function callCreated(el) {
+function callCreated(el, root) {
     var elSetups = el.setups
     if (!elSetups || !has(elSetups, 'created')) return
-    elSetups.created.call(el)
+    if (isFn(elSetups.created))
+        elSetups.created.call(root, el, root)
 }
 /**
  * @param defs {Object} child definitions
@@ -220,6 +221,7 @@ function object2children(el, object, root) {
     setStyles(child)
     setEvents(child, root)
     setCls(child)
+    child.root_ = root
     return child
 }
 /**
@@ -235,7 +237,7 @@ function appendChild(parent, child, root, stop) {
     if (has(child, 'd__isCmp')) return
     var f2 = getChildrenConfigs(child)
     setChildren(child, f2, root)
-    callCreated(child)
+    callCreated(child, root)
 }
 /**
  * Used by 'for', does not accept array as input
@@ -407,8 +409,8 @@ function createElement(defs) {
     setCls(el)
     setRootChildren(el)
     var elSetups = el.setups
-    if (has(elSetups, 'created')) {
-        elSetups.created.call(el)
+    if (has(elSetups, 'created') && isFn(elSetups.created)) {
+        elSetups.created.call(el, el, el)
     }
     if (has(elSetups, 'parent')) {
         elSetups.parent.appendChild(el)

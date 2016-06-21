@@ -1,5 +1,5 @@
 import { has, createDict, defProps, defProp } from './object'
-import { isArray, isNum } from './check'
+import { isArray, isNum, isStrOrNum } from './check'
 import { assignOnly } from './assign'
 import { getDefaults, appendChild, for2children } from './create'
 import { last, every, any } from './collection'
@@ -16,20 +16,34 @@ function removeAllEvts(el) {
 	hasEvtEls.forEach(removeEvt)
 }
 function removeRef(el) {
-	var refHolder = has(el, 'refScope') && el.refScope === 'parent' ? el.parentNode : el.root
-	refHolder.refs.removeRef(el.ref)
+    if (has(el, 'ref')) {
+        var refHolder = has(el, 'refScope') && el.refScope === 'parent' ? el.parentNode : el.root_
+        // case when component is direct root of parent,
+        // refs holder will be gone before this execution
+        if (has(refHolder, 'refs'))
+            refHolder.refs.removeRef(el.ref)
+        return
+    }
+    if (has(el, 'directRef')) {
+        var directRef = el.directRef
+        if (!isStrOrNum(directRef) && directRef !== '') {
+            delete el.root_[directRef]
+        }
+    }
 }
-function removeAllRefs(el, root) {
+function removeAllRefs(el) {
 	if (has(el, 'refs')) {
 		el.refs.removeAll()
 		delete el.refs
 	}
 	if (has(el, 'ref'))
-		removeRef(el, root)
+		removeRef(el)
+    else if (has(el, 'directRef'))
+        delete root[el.directRef]
 	var hasRefEls = queryAll(el, 'hsr', true)
 	hasRefEls.forEach(removeRef)
 }
-function removeEls(els, root) {
+function removeEls(els) {
     els.forEach(function(el, elIdx) {
         if (el.nodeType === Node.ELEMENT_NODE) {
             removeAllRefs(el)
@@ -162,7 +176,7 @@ defProps(Observer.prototype, {
                     if (index > currLen || indexes < 0) continue
                     var childToRemove = queryDirectByIndex(parent, index, 'groupKey', groupKey)
                     if (childToRemove) {
-                        parent.removeChild(childToRemove)
+                        removeEls([childToRemove])
                         existingVal.splice(index - noOfRemovedChild++, 1)
                     }
                 }

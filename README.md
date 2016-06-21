@@ -30,15 +30,20 @@ var root = Dominic.create({
             items: [
                 { tag: 'div', width: 20, height: 20, background: 'red' },
                 { tag: 'div', width: 20, height: 20, background: 'orange' },
-            ]
+            ],
+            created: function(el, root) {
+                // el: the div element with background: 'lightgreen' and 2 children 'red' & 'orange'
+                // root: the root elemnt directly created by Dominic.create
+                // this: = root element
+            }
         }
     ],
-    created: function () {
+    created: function (el, root) {
         // called when finished every setup
     },
     appended: function () {
         // called when
-        // 1. element is root (created by CreateElement)
+        // 1. element is root (created by Dominic.create)
         // 2. parent is Node and appended element successfully
     }
 })
@@ -521,7 +526,7 @@ root.observe.push('data', {
     ]}
 })
 ```
-#### All template APIs
+#### All template functions
 * Only work when template data is array
 * Now support multiple templates observing same property
 * APIs:

@@ -1,4 +1,4 @@
-import { createDict, has, isPlain, defProps } from './modules/object'
+import { createDict, defProps } from './modules/object'
 import { query, queryDirect, queryLastDirect, queryAll, queryAllDirect, queryAllByMultipleKeys } from './modules/query'
 import { attachEvent } from './modules/event'
 import { Component } from './modules/component'

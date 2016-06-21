@@ -14,7 +14,7 @@ function query(root, key, value) {
         len = childNodes.length
     for (var i = 0; i < len; i++) {
         var child = childNodes[i]
-        if (hasOwnProperty.call(child, key) && (typeof value === 'undefined' || child[key] === value))
+        if (has(child, key) && (typeof value === 'undefined' || child[key] === value))
             result = child
         else
             result = query(child, key, value)

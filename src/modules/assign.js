@@ -1,4 +1,5 @@
 import { has } from './object'
+import { isArray } from './check'
 /**
  * Assign value to an object, does overwrite
  * @param dest {Object}
@@ -52,7 +53,7 @@ function assignExtend(dest) {
         for (var key in src) {
             if (has(src, key)) {
                 var val = src[key]
-                if (Array.isArray(dest)) {
+                if (isArray(dest)) {
                     for (var j = 0; j < dest.length; j++) {
                         var destMem = dest[j]
                         if (!has(destMem, key))

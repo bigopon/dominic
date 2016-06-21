@@ -112,7 +112,7 @@ var   toString$1 = Object.prototype.toString;
           len = childNodes.length;
       for (var i = 0; i < len; i++) {
           var child = childNodes[i];
-          if (hasOwnProperty.call(child, key) && (typeof value === 'undefined' || child[key] === value)) result = child;else result = query(child, key, value);
+          if (has(child, key) && (typeof value === 'undefined' || child[key] === value)) result = child;else result = query(child, key, value);
           if (result) return result;
       }
       return result;
@@ -454,7 +454,7 @@ var   toString$1 = Object.prototype.toString;
           for (var key in src) {
               if (has(src, key)) {
                   var val = src[key];
-                  if (Array.isArray(dest)) {
+                  if (isArray(dest)) {
                       for (var j = 0; j < dest.length; j++) {
                           var destMem = dest[j];
                           if (!has(destMem, key)) destMem[key] = val;
@@ -478,19 +478,30 @@ var   toString$1 = Object.prototype.toString;
       hasEvtEls.forEach(removeEvt);
   }
   function removeRef(el) {
-      var refHolder = has(el, 'refScope') && el.refScope === 'parent' ? el.parentNode : el.root;
-      refHolder.refs.removeRef(el.ref);
+      if (has(el, 'ref')) {
+          var refHolder = has(el, 'refScope') && el.refScope === 'parent' ? el.parentNode : el.root_;
+          // case when component is direct root of parent,
+          // refs holder will be gone before this execution
+          if (has(refHolder, 'refs')) refHolder.refs.removeRef(el.ref);
+          return;
+      }
+      if (has(el, 'directRef')) {
+          var directRef = el.directRef;
+          if (!isStrOrNum(directRef) && directRef !== '') {
+              delete el.root_[directRef];
+          }
+      }
   }
-  function removeAllRefs(el, root) {
+  function removeAllRefs(el) {
       if (has(el, 'refs')) {
           el.refs.removeAll();
           delete el.refs;
       }
-      if (has(el, 'ref')) removeRef(el, root);
+      if (has(el, 'ref')) removeRef(el);else if (has(el, 'directRef')) delete root[el.directRef];
       var hasRefEls = queryAll(el, 'hsr', true);
       hasRefEls.forEach(removeRef);
   }
-  function removeEls(els, root) {
+  function removeEls(els) {
       els.forEach(function (el, elIdx) {
           if (el.nodeType === Node.ELEMENT_NODE) {
               removeAllRefs(el);
@@ -617,7 +628,7 @@ var   toString$1 = Object.prototype.toString;
                       if (index > currLen || indexes < 0) continue;
                       var childToRemove = queryDirectByIndex(parent, index, 'groupKey', groupKey);
                       if (childToRemove) {
-                          parent.removeChild(childToRemove);
+                          removeEls([childToRemove]);
                           existingVal.splice(index - noOfRemovedChild++, 1);
                       }
                   }
@@ -782,12 +793,21 @@ var   toString$1 = Object.prototype.toString;
   });
 
   function setReference(parent, el, root) {
-      var ref = el.ref;
-      if (!isStrOrNum(ref)) return;
-      var refScope = el.refScope,
-          scope = refScope === 'parent' ? parent : root;
-      if (!has(scope, 'refs')) scope.refs = new ReferenceHolder();
-      scope.refs[ref] = el;
+      var ref, holder;
+      if (has(el, 'ref')) {
+          ref = el.ref;
+          if (ref === '' || !isStrOrNum(ref)) return;
+          var scope = has(el, 'refScope') && el.refScope === 'parent' ? parent : root;
+          if (!has(scope, 'refs')) scope.refs = new ReferenceHolder();
+          holder = scope.refs;
+      } else if (has(el, 'directRef')) {
+          ref = el.directRef;
+          if (ref === '' || !isStrOrNum(ref)) return;
+          holder = root;
+      } else {
+          return;
+      }
+      holder[ref] = el;
       el.hsr = true;
   }
 
@@ -955,10 +975,10 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
       if (!elSetups || !has(elSetups, 'cls') || !elSetups.cls) return;
       el.className = elSetups.cls.trim();
   }
-  function callCreated(el) {
+  function callCreated(el, root) {
       var elSetups = el.setups;
       if (!elSetups || !has(elSetups, 'created')) return;
-      elSetups.created.call(el);
+      if (isFn(elSetups.created)) elSetups.created.call(root, el, root);
   }
   /**
    * @param defs {Object} child definitions
@@ -986,6 +1006,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
       setStyles(child);
       setEvents(child, root);
       setCls(child);
+      child.root_ = root;
       return child;
   }
   /**
@@ -1001,7 +1022,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
       if (has(child, 'd__isCmp')) return;
       var f2 = getChildrenConfigs(child);
       setChildren(child, f2, root);
-      callCreated(child);
+      callCreated(child, root);
   }
   /**
    * Used by 'for', does not accept array as input
@@ -1160,8 +1181,8 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
       setCls(el);
       setRootChildren(el);
       var elSetups = el.setups;
-      if (has(elSetups, 'created')) {
-          elSetups.created.call(el);
+      if (has(elSetups, 'created') && isFn(elSetups.created)) {
+          elSetups.created.call(el, el, el);
       }
       if (has(elSetups, 'parent')) {
           elSetups.parent.appendChild(el);

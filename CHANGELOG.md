@@ -1,4 +1,12 @@
-0.1.42 / 2014-06-19
+0.1.44 / 2016-06-21
+==================
+* Change to created callback. Now call with 2 params (element itself and the root)
+* Add config to make direct reference to element from root via `directRef: refName'`
+  usage: `root[refName]` instead of `root.refs[refName]` for reference.
+  Notice: el with `ref` will ignore `directRef` 
+* Fix bug in query function
+
+0.1.42 / 2016-06-19
 ==================
   * Added changelog
   * Temporarily remove ability to render on server (was broken anyway)

@@ -50,13 +50,24 @@ defProps(ReferenceHolder.prototype, {
 })
 
 function setReference(parent, el, root) {
-    var ref = el.ref
-    if (!isStrOrNum(ref)) return;
-    var refScope = el.refScope,
-        scope = refScope === 'parent' ? parent : root
-    if (!has(scope, 'refs'))
-        scope.refs = new ReferenceHolder()
-    scope.refs[ref] = el
+    var ref, holder
+    if (has(el, 'ref')) {
+        ref = el.ref
+        if (ref === '' || !isStrOrNum(ref)) return
+        var scope = has(el, 'refScope') && el.refScope === 'parent' ? parent : root
+        if (!(has(scope, 'refs')))
+            scope.refs = new ReferenceHolder()
+        holder = scope.refs
+    }
+    else if (has(el, 'directRef')) {
+        ref = el.directRef
+        if (ref === '' || !isStrOrNum(ref)) return;
+        holder = root
+    }
+    else {
+        return
+    }
+    holder[ref] = el
     el.hsr = true
 }
 
