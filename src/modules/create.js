@@ -234,7 +234,10 @@ function appendChild(parent, child, root, stop) {
     if (child === null || typeof child === 'undefined') return
     setReference(parent, child, root)
     insertBefore(parent, child, stop)
-    if (has(child, 'd__isCmp')) return
+    if (has(child, 'd__isCmp')) {
+        child.root_ = root
+        return
+    }
     var f2 = getChildrenConfigs(child)
     setChildren(child, f2, root)
     callCreated(child, root)
@@ -427,6 +430,14 @@ function createElement(defs) {
 function createComponent(defs) {
     var ctype = defs.ctype
     var definitions = Component.get(ctype).create(defs)
+    // Carry the reference to the component
+    if (has(defs, 'ref')) {
+        definitions.ref = defs.ref
+        if (has(defs, 'refScope'))
+            definitions.refScope = defs.refScope
+    }
+    else if (has(defs, 'directRef'))
+        definitions.directRef = defs.directRef
     var comp = createElement(definitions)
     return comp
 }

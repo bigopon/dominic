@@ -26,7 +26,7 @@ function removeRef(el) {
     }
     if (has(el, 'directRef')) {
         var directRef = el.directRef
-        if (!isStrOrNum(directRef) && directRef !== '') {
+        if (isStrOrNum(directRef) && directRef !== '') {
             delete el.root_[directRef]
         }
     }
@@ -36,10 +36,11 @@ function removeAllRefs(el) {
 		el.refs.removeAll()
 		delete el.refs
 	}
-	if (has(el, 'ref'))
+	if (has(el, 'ref')) {
 		removeRef(el)
-    else if (has(el, 'directRef'))
+    } else if (has(el, 'directRef')) {
         delete root[el.directRef]
+    }
 	var hasRefEls = queryAll(el, 'hsr', true)
 	hasRefEls.forEach(removeRef)
 }

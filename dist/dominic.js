@@ -487,7 +487,7 @@ var   toString$1 = Object.prototype.toString;
       }
       if (has(el, 'directRef')) {
           var directRef = el.directRef;
-          if (!isStrOrNum(directRef) && directRef !== '') {
+          if (isStrOrNum(directRef) && directRef !== '') {
               delete el.root_[directRef];
           }
       }
@@ -497,7 +497,11 @@ var   toString$1 = Object.prototype.toString;
           el.refs.removeAll();
           delete el.refs;
       }
-      if (has(el, 'ref')) removeRef(el);else if (has(el, 'directRef')) delete root[el.directRef];
+      if (has(el, 'ref')) {
+          removeRef(el);
+      } else if (has(el, 'directRef')) {
+          delete root[el.directRef];
+      }
       var hasRefEls = queryAll(el, 'hsr', true);
       hasRefEls.forEach(removeRef);
   }
@@ -1019,7 +1023,10 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
       if (child === null || typeof child === 'undefined') return;
       setReference(parent, child, root);
       insertBefore(parent, child, stop);
-      if (has(child, 'd__isCmp')) return;
+      if (has(child, 'd__isCmp')) {
+          child.root_ = root;
+          return;
+      }
       var f2 = getChildrenConfigs(child);
       setChildren(child, f2, root);
       callCreated(child, root);
@@ -1198,6 +1205,11 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
   function createComponent(defs) {
       var ctype = defs.ctype;
       var definitions = Component.get(ctype).create(defs);
+      // Carry the reference to the component
+      if (has(defs, 'ref')) {
+          definitions.ref = defs.ref;
+          if (has(defs, 'refScope')) definitions.refScope = defs.refScope;
+      } else if (has(defs, 'directRef')) definitions.directRef = defs.directRef;
       var comp = createElement(definitions);
       return comp;
   }

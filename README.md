@@ -52,6 +52,10 @@ var root = Dominic.create({
 ![alt tag](http://img.prntscr.com/img?url=http://i.imgur.com/XFBYYe4.png)
 
 ###### Styling
+* `color`, `backgroundColor`, `background`, `display`, `position`, `border`,
+  `transform`, `opacity`, `fontSize`
+  will be applied directly to element style without the need of putting them
+  in a style object. Same with: 
 * `width`, `height`, `minHeight`, `maxHeight`,  `minWidth`, `maxWidth`
 * `margin`, `padding`, `margin` and `padding` + `(Top - Left - Right - Bottom)`
  will be converted to proper CSS value if value is number
@@ -222,7 +226,7 @@ var root = Dominic.create({
 ###### Result
 ![alt tag](http://img.prntscr.com/img?url=http://i.imgur.com/WQP5QQ3.png)
 
-#### Reference
+#### Reference 1
 ```javascript
 var root = Dominic.create({
     className: 'root',
@@ -243,6 +247,53 @@ var root = Dominic.create({
                 },
             ]
         }
+    ]
+})
+```
+
+#### Reference 2
+```javascript
+var root = Dominic.create({
+    className: 'root',
+    parent: document.body,
+    width: 300,
+    height: 300,
+    background: 'darkgreen',
+    items: [
+        { width: 50, height: 50, text: 'Intro', display: 'inline-block' },
+        { width: 200, ref: 'orange', // access by root.refs.orange
+            items: [
+                { width: 20, height: 20, background: 'red',
+                    ref: 'lightgreen' // access by root.refs.lightgreen
+                },
+                { width: 20, height: 20, background: 'orange',
+                    // access by root['orange-f2']
+                    // ref: 'orange', // using ref will get dominic ignore directRef
+                    directRef: 'orange-f2'
+                },
+            ]
+        }
+    ]
+})
+
+// example
+Dominic.register('input', function(defs) {
+    return {
+        items: [
+            { tag: 'span', text: defs.label },
+            { tag: 'input', placeholder: 'Choose name...' }
+        ]
+    }
+})
+// usage
+var root = Dominic.create({
+    cls: 'root', 
+    items: [
+        // accessed by root.refs.nameInput
+        // previously have to define ref in component definitions
+        { ctype: 'input', ref: 'nameInput', label: 'Name: ' },
+        // accessed by root.nameInput2
+        { ctype: 'input', directRef: 'nameInput2', label: 'Name 2: ' }
     ]
 })
 ```
