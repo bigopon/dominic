@@ -12,10 +12,35 @@ Basic feature list:
  * Components
  * ~~Server side render to Html (with helper, see API)~~ (temporarily)
 
+* Version: 0.1.46
+* Outline
+  - [1. Basic](#basic1)
+  - [2. Div all the elements](#basic2)
+  - [3a Share configs](#basic3)
+  - [3b Share configs with extra classes](#basic3b)
+  - [4. Condition `if` | `hide`](#basic4)
+  - [5. Attributes](#attributes)
+  - [6. Reference](#reference1)
+  - [7. Direct Reference](#reference2)
+  - [8. Events 1: Basic](#event1)
+  - [9. Events 2: Delegate](#event2)
+  - [10 Events 3: Key Code Hook](#event3)
+  - [11 Events 4: Counter & Validator](#event4)
+  - [12 Template 1: Basic](#template1)
+  - [13 Template 2: Object loop](#template2)
+  - [14 Template 3: Data change reaction](#template3)
+  - [15 Template 4: All functions](#template4)
+  - [16 Component: Basic 1](#component1)
+  - [17 Component: Basic 2](#component2)
+  - [Installation](#install)
+  - [API](#api)
+  - [Plan](#plan)
+  - [License MIT](#license)
+
 
 And here's some code! :+1:
 
-#### Basic 1:
+#### Basic 1: <a id="basic1"></a>
 ```javascript
 var root = Dominic.create({
     cls: 'root', // or className: 'root' | cls as alias for className
@@ -60,7 +85,7 @@ var root = Dominic.create({
 * `margin`, `padding`, `margin` and `padding` + `(Top - Left - Right - Bottom)`
  will be converted to proper CSS value if value is number
 
-#### Basic 2: Function as item & div all the elements
+#### Basic 2: Function as item & div all the elements <a id="basic2"></a>
 * Tag name is 'div' by default
 ```javascript
 var outerScopeDataSource = [
@@ -95,7 +120,7 @@ var root = Dominic.create({
 ###### Result
 ![](http://image.prntscr.com/image/96b684409c2847a9bd92aa691ea4d294.png)
 
-#### Basic 3a: Share configs
+#### Basic 3a: Share configs <a id="basic3"></a>
 ```javascript
 var root = Dominic.create({
     cls: 'root',
@@ -139,7 +164,7 @@ var root = Dominic.create({
 ###### Result
 ![](http://img.prntscr.com/img?url=http://i.imgur.com/o8Nt3GZ.png)
 
-#### Basic 3b: Share configs with extra class
+#### Basic 3b: Share configs with extra class <a id="basic3b"></a>
 `xtraCls`, `xCls`: `string`
 ```javascript
 var root = Dominic.create({
@@ -160,7 +185,7 @@ var root = Dominic.create({
 ###### Result
 ![](http://image.prntscr.com/image/6f45032d704043bfaf4f84df6cdf1613.png)
 
-#### Basic 4: Condition `if`/ `hide`
+#### Basic 4: Condition `if`/ `hide` <a id="basic4"></a>
 ```javascript
 var root = Dominic.create({
     className: 'root',
@@ -206,7 +231,7 @@ var root = Dominic.create({
 ![](http://img.prntscr.com/img?url=http://i.imgur.com/poLwTtM.png)
 
 
-#### Attributes
+#### Attributes <a id="attributes"></a>
 ```javascript
 var root = Dominic.create({
     className: 'root',
@@ -226,7 +251,7 @@ var root = Dominic.create({
 ###### Result
 ![alt tag](http://img.prntscr.com/img?url=http://i.imgur.com/WQP5QQ3.png)
 
-#### Reference 1
+#### Reference 1 <a id="reference1"></a>
 ```javascript
 var root = Dominic.create({
     className: 'root',
@@ -251,7 +276,7 @@ var root = Dominic.create({
 })
 ```
 
-#### Reference 2
+#### Reference 2: Direct reference <a id="reference2"></a>
 ```javascript
 var root = Dominic.create({
     className: 'root',
@@ -298,7 +323,7 @@ var root = Dominic.create({
 })
 ```
 
-#### Events 1:
+#### Events 1: <a id="event1"></a>
 Reserved keyword for events:
 * Mouse: `click` `mousedown` `mouseup` `mouseover` `mouseout` `mouseenter` `mouseleave` `mousemove`
 * Drag: `dragstart` `dragend` `drag` `dragover` `dragenter` `dragleave` `drop`
@@ -369,7 +394,7 @@ var root = Dominic.create({
 })
 ```
 
-#### Events 2: Delegate
+#### Events 2: Delegate <a id="event2"></a>
 ```javascript
 var root = Dominic.create({
     cls: 'root',
@@ -399,7 +424,7 @@ var root = Dominic.create({
 })
 ```
 
-#### Events 3: Key code hook
+#### Events 3: Key code hook <a id="event3"></a>
 - Only trigger key event with specified key codes
 ```javascript
 var root = Dominic.create({
@@ -429,7 +454,60 @@ var root = Dominic.create({
 })
 ```
 
-#### Template 1a
+#### Events 4: Event counter and validator <a id="event4"></a>
+```javascript
+// This example second input only let user navigate by arrow key
+// if user has already 'sayHelo' with a validated name
+var root = Dominic.create({
+    cls: 'root',
+    parent: document.body,
+    width: '100%',
+    height: '100%',
+    defaults: {
+        cls: 'default-class',
+    },
+    items: [
+        { xCls: 'sidebar' },
+        { xtraCls: 'main' },
+        { tag: 'input',
+            keydown: { scope: 'root', handler: 'sayHelo', key: 13,
+                // count 1 to remove this listener after user say helo
+                // to not let user change name
+                count: 1,
+                // validator's logic
+                // * validator will run right before real handler,
+                // * return false to stop handler
+                // * counter will not decrease if validator returns false
+                // * if event is delgated to child, then validator will have same
+                //     parameters with handler (event, match, delegate)
+                validator: function(e) {
+                    return e.target.value
+                }
+            }
+        },
+        { tag: 'input',
+            keydown: { scope: 'root', handler: 'onArrowKey', key: [37,38,39,40],
+                // check if user is allowed to go by validator
+                validator: 'isAllowedToGo'
+                // only let user navigate 10 times
+                count: 10,
+            }
+        }
+    ],
+    sayHelo: function (e) {
+        this.name = e.target.value
+        console.log('helo', e.target.value)
+    },
+    onArrowKey: function (e) {
+        console.log('Navigating:', e.keyCode)
+    },
+    isAllowedToGo: function() {
+        return this.name
+    }
+})
+```
+
+#### Template 1a <a id="template1"></a>
 1. `for`: data source
 2. `TplFn`: function (item, itemIndex)
 * If data source provided is an array, item is record of array and itemIndex is record index
@@ -477,7 +555,7 @@ var root = Dominic.create({
 ###### Result
 ![](http://img.prntscr.com/img?url=http://i.imgur.com/aZVNQe8.png)
 
-#### Template 1b
+#### Template 1b: Object loop <a id="template2"></a>
 * Can also loop through object property if specified with `alwaysIterate`.
 
 ```javascript
@@ -512,7 +590,7 @@ root.observe.data2 = [ 'Helo ', 'This ', 'is ', 'a ', 'test ' ]
 ###### Result
 ![](http://image.prntscr.com/image/bc5ae70b6911427897014bf17dee57b0.png)
 
-#### Template with data change reaction
+#### Template with data change reaction <a id="template3"></a>
 ```javascript
 var src = [
     { name: 'apple', cost: 0.5 },
@@ -577,7 +655,7 @@ root.observe.push('data', {
     ]}
 })
 ```
-#### All template functions
+#### All template functions <a id="template4"></a>
 * Only work when template data is array
 * Now support multiple templates observing same property
 * APIs:
@@ -612,7 +690,7 @@ root.observe.push('data', {
 ```
 
 #### Component (v.0.1.42)
-#### Basic 1
+#### Basic 1 <a id="component1"></a>
 ```javascript
 Dominic.register('input', function Input(defs) {
     return {
@@ -633,7 +711,8 @@ Dominic.create({
 ```
 ###### Result
 ![](http://image.prntscr.com/image/9ce1ca1c21f44430beaa3c32e5cc5859.png)
-#### Basic 2
+
+#### Basic 2 <a id="component2"></a>
 ```javascript
 // Define
 Dominic.register('input', function Input(defs) {
@@ -709,7 +788,7 @@ Prototyping some design and testing event/ interaction made a bit more convinien
 - No dependencies & everything in javascript
 - There are Events & reference & template supports
 
-## Installation
+## Installation <a id="install"></a>
 ```HTML
 <script src="dominic.min.js"></script>
 ```
@@ -717,7 +796,7 @@ Prototyping some design and testing event/ interaction made a bit more convinien
 npm i dominic
 ```
 
-## API
+## API <a id="api"></a>
 
   1. Create new DOM element
 ```javascript
@@ -736,12 +815,13 @@ Dominic.create(defs)
 Dominic.register(name, fn)
 ```
 
-## Plan
+## Plan <a id="plan"></a>
 - [x] Have mixed components and normal elements
+- [ ] Have data binding/ linking
 - [ ] Have diffing when updating in template
 - [ ] Have basic layouts: `facebook`, `twitter`, `pinterest`
 - [ ] Have basic components: `tab`, `combobox`, `table` 
 
 
-## License
+## License <a id="license"></a>
 .MIT

@@ -1,3 +1,59 @@
+0.1.46 / 2016-06-23
+==================
+* Add counter and validator to event `counter: int`, `validator: string|function`
+```javascript
+// This example second input only let user navigate by arrow key
+// if user has already 'sayHelo' with a validated name
+var root = Dominic.create({
+    cls: 'root',
+    parent: document.body,
+    width: '100%',
+    height: '100%',
+    defaults: {
+        cls: 'default-class',
+    },
+    items: [
+        { xCls: 'sidebar' },
+        { xtraCls: 'main' },
+        { tag: 'input',
+            keydown: { scope: 'root', handler: 'sayHelo', key: 13,
+                // count 1 to remove this listener after user say helo
+                // to not let user change name
+                count: 1,
+                // validator's logic
+                // * validator will run right before real handler,
+                // * return false to stop handler
+                // * counter will not decrease if validator returns false
+                // * if event is delgated to child, then validator will have same
+                //     parameters with handler (event, match, delegate)
+                validator: function(e) {
+                    return e.target.value
+                }
+            }
+        },
+        { tag: 'input',
+            keydown: { scope: 'root', handler: 'onArrowKey', key: [37,38,39,40],
+                // check if user is allowed to go by validator
+                validator: 'isAllowedToGo'
+                // only let user navigate 10 times
+                count: 10,
+            }
+        }
+    ],
+    sayHelo: function (e) {
+        this.name = e.target.value
+        console.log('helo', e.target.value)
+    },
+    onArrowKey: function (e) {
+        console.log('Navigating:', e.keyCode)
+    },
+    isAllowedToGo: function() {
+        return this.name
+    }
+})
+```
+* Improve readme
+
 0.1.45 / 2016-06-22
 ==================
 * Auto assign reference to component definitions before create

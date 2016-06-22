@@ -9,7 +9,7 @@
   var getKeys = Object.keys;
   var proto = Object.prototype;
   var hasOwn = proto.hasOwnProperty;
-  var has = function has(dict, key) {
+var   has$1 = function has(dict, key) {
       return hasOwn.call(dict, key);
   };
 var   toString$1 = Object.prototype.toString;
@@ -20,7 +20,7 @@ var   toString$1 = Object.prototype.toString;
   var createDict = function createDict(initValue) {
       var dict = create(null);
       for (var i in initValue) {
-          if (has(initValue, i)) dict[i] = initValue[i];
+          if (has$1(initValue, i)) dict[i] = initValue[i];
       }return dict;
   };
 
@@ -31,6 +31,7 @@ var   toString$1 = Object.prototype.toString;
   };
 
   var isArray = Array.isArray;
+  var isFinite = window.isFinite;
 
   function isStrOrNum(val) {
       var valType = typeof val === 'undefined' ? 'undefined' : _typeof(val);
@@ -49,6 +50,9 @@ var   toString$1 = Object.prototype.toString;
   }
   function isDom(node) {
       return node instanceof Node;
+  }
+  function isNum(val) {
+      return !isNaN(val) && isFinite(val);
   }
 
   /**
@@ -75,7 +79,7 @@ var   toString$1 = Object.prototype.toString;
    */
   function each(object, fn, thisArg) {
       for (var prop in object) {
-          if (has(object, prop)) fn.call(thisArg, object[prop], prop);
+          if (has$1(object, prop)) fn.call(thisArg, object[prop], prop);
       }
   }
   /**
@@ -112,7 +116,7 @@ var   toString$1 = Object.prototype.toString;
           len = childNodes.length;
       for (var i = 0; i < len; i++) {
           var child = childNodes[i];
-          if (has(child, key) && (typeof value === 'undefined' || child[key] === value)) result = child;else result = query(child, key, value);
+          if (has$1(child, key) && (typeof value === 'undefined' || child[key] === value)) result = child;else result = query(child, key, value);
           if (result) return result;
       }
       return result;
@@ -129,7 +133,7 @@ var   toString$1 = Object.prototype.toString;
           len = childNodes.length;
       for (var i = 0; i < len; i++) {
           var child = childNodes[i];
-          if (has(child, key) && (typeof value === 'undefined' || child[key] === value)) return child;
+          if (has$1(child, key) && (typeof value === 'undefined' || child[key] === value)) return child;
       }
       return null;
   }
@@ -144,7 +148,7 @@ var   toString$1 = Object.prototype.toString;
           len = childNodes.length;
       for (var i = len - 1; i > -1; i++) {
           var child = childNodes[i];
-          if (has(child, key) && (typeof value === 'undefined' || child[key] === value)) return child;
+          if (has$1(child, key) && (typeof value === 'undefined' || child[key] === value)) return child;
       }
       return null;
   }
@@ -165,7 +169,7 @@ var   toString$1 = Object.prototype.toString;
       for (var i = 0; i < len; i++) {
           var child = childNodes[i];
           if (startIdx === -1) {
-              if (has(child, key) && (typeof value === 'undefined' || child[key] === value)) {
+              if (has$1(child, key) && (typeof value === 'undefined' || child[key] === value)) {
                   if (startIdx === -1) startIdx = i;
               }
           }
@@ -187,7 +191,7 @@ var   toString$1 = Object.prototype.toString;
           curr = 0;
       for (var i = 0; i < length; i++) {
           var child = childNodes[i];
-          if (has(child, key) && (typeof value === 'undefined' || child[key] === value)) result[curr++] = child;
+          if (has$1(child, key) && (typeof value === 'undefined' || child[key] === value)) result[curr++] = child;
       }
       return result;
   }
@@ -204,7 +208,7 @@ var   toString$1 = Object.prototype.toString;
           length = childNodes.length;
       for (var i = 0; i < length; i++) {
           var child = childNodes[i];
-          if (has(child, key) && (typeof value === 'undefined' || child[key] === value)) result[result.length] = child;
+          if (has$1(child, key) && (typeof value === 'undefined' || child[key] === value)) result[result.length] = child;
           extend(result, queryAll(child, key, value));
       }
       return result;
@@ -227,7 +231,7 @@ var   toString$1 = Object.prototype.toString;
           var child = childNodes[i];
           for (var j = 0; j < keyLen; j++) {
               var key = keys[j];
-              if (has(child, key) && (typeof value === 'undefined' || child[key] === value)) {
+              if (has$1(child, key) && (typeof value === 'undefined' || child[key] === value)) {
                   result[resultIdx++] = child;
                   break;
               }
@@ -280,6 +284,15 @@ var   toString$1 = Object.prototype.toString;
                   this[i].destroy();
               }this.length = 0;
           }
+      },
+      remove: {
+          value: function remove(handler) {
+              var idx = this.indexOf(handler);
+              if (idx !== -1) {
+                  handler.destroy();
+                  this.splice(idx, 1);
+              }
+          }
       }
   });
 
@@ -289,17 +302,40 @@ var   toString$1 = Object.prototype.toString;
       var callback = _ref.callback;
       var capture = _ref.capture;
       var delegate = _ref.delegate;
+      var single = _ref.single;
+      var count = _ref.count;
+      var validator = _ref.validator;
 
       function handler(event) {
+          var isValid;
           if (typeof delegate === 'string') {
               if (el === event.target) return;
               var match = walkupAndFindMatch(el, event.target, delegate);
               if (!match) return;
-              if (typeof callback === 'function') callback.call(thisArg, event, match, delegate);
+              if (typeof callback === 'function') {
+                  if (validator) {
+                      isValid = validator.call(thisArg, event, match, delegate);
+                      if (!isValid) return;
+                  }
+                  if (handler.count > -1) {
+                      if (handler.count--) callback.call(thisArg, event, match, delegate);
+                      if (!handler.count) el.evts.remove(handler);
+                  } else callback.call(thisArg, event, match, delegate);
+              }
           } else {
-              if (typeof callback === 'function') callback.call(thisArg, event);
+              if (typeof callback === 'function') {
+                  if (validator) {
+                      isValid = validator.call(thisArg, event);
+                      if (!isValid) return;
+                  }
+                  if (handler.count > -1) {
+                      if (handler.count--) callback.call(thisArg, event);
+                      if (!handler.count) el.evts.remove(handler);
+                  } else callback.call(thisArg, event);
+              }
           }
       }
+      handler.count = count;
       handler.destroy = function () {
           return el.removeEventListener(type, handler, capture);
       };
@@ -314,19 +350,41 @@ var   toString$1 = Object.prototype.toString;
       var capture = _ref2.capture;
       var delegate = _ref2.delegate;
       var keys = _ref2.keys;
+      var count = _ref2.count;
+      var validator = _ref2.validator;
 
       function handler(event) {
+          var isValid;
           if (typeof delegate === 'string') {
               if (el === event.target) return;
               var match = walkupAndFindMatch(el, event.target, delegate);
               if (!match) return;
               if (keys && keys.indexOf(event.keyCode) === -1) return;
-              if (typeof callback === 'function') callback.call(thisArg, event, match, delegate);
+              if (typeof callback === 'function') {
+                  if (validator) {
+                      isValid = validator.call(thisArg, event, match, delegate);
+                      if (!isValid) return;
+                  }
+                  if (handler.count > -1) {
+                      if (handler.count--) callback.call(thisArg, event, match, delegate);
+                      if (!handler.count) el.evts.remove(handler);
+                  } else callback.call(thisArg, event, match, delegate);
+              }
           } else {
               if (keys && keys.indexOf(event.keyCode) === -1) return;
-              if (typeof callback === 'function') callback.call(thisArg, event);
+              if (typeof callback === 'function') {
+                  if (validator) {
+                      isValid = validator.call(thisArg, event);
+                      if (!isValid) return;
+                  }
+                  if (handler.count > -1) {
+                      if (handler.count--) callback.call(thisArg, event);
+                      if (!handler.count) el.evts.remove(handler);
+                  } else callback.call(thisArg, event);
+              }
           }
       }
+      handler.count = count;
       handler.destroy = function () {
           return el.removeEventListener(type, handler, capture);
       };
@@ -346,7 +404,7 @@ var   toString$1 = Object.prototype.toString;
           handlerRegType = typeof handler === 'undefined' ? 'undefined' : _typeof(handler),
           realHandler;
       root = root || el;
-      var scope = evtArgs.scope === 'root' ? root : has(evtArgs, 'scope') ? evtArgs.scope : el;
+      var scope = evtArgs.scope === 'root' ? root : has$1(evtArgs, 'scope') ? evtArgs.scope : el;
 
       if (handlerRegType === 'function') realHandler = handler;else if (handlerRegType === 'string') realHandler = scope[handler];
 
@@ -358,21 +416,26 @@ var   toString$1 = Object.prototype.toString;
           delegate = evtArgs.delegate,
           isKeyEvt = keyEvts.indexOf(type) !== -1,
           isFocusEvt = focusEvts.indexOf(type) !== -1,
+          count = has$1(evtArgs, 'count') && isNum(evtArgs.count) ? evtArgs.count : -1,
+          single = evtArgs.single === true,
           evtHandler;
+      var validatorType = _typeof(evtArgs.validator),
+          validator = null;
+      if (validatorType === 'string') validator = scope[evtArgs.validator];else if (validatorType === 'function') validator = evtArgs.validator;
       if (isKeyEvt) {
           var keys = null;
-          if (has(evtArgs, 'key')) {
+          if (has$1(evtArgs, 'key')) {
               if (typeof evtArgs.key === 'number') keys = [evtArgs.key];else if (are(evtArgs.key, 'number')) keys = evtArgs.key;
           }
-          evtHandler = makeKeyHandler({ type: type, el: el, callback: realHandler, capture: capture, delegate: delegate, keys: keys }, scope);
+          evtHandler = makeKeyHandler({ type: type, el: el, callback: realHandler, capture: capture, delegate: delegate, keys: keys, single: single, count: count, validator: validator }, scope);
       } else {
           if (isFocusEvt && delegate) {
               capture = true;
           }
-          evtHandler = makeHandler({ type: type, el: el, callback: realHandler, capture: capture, delegate: delegate }, scope);
+          evtHandler = makeHandler({ type: type, el: el, callback: realHandler, capture: capture, delegate: delegate, single: single, count: count, validator: validator }, scope);
       }
 
-      if (!has(el, 'evts')) el.evts = new EventHolder();
+      if (!has$1(el, 'evts')) el.evts = new EventHolder();
       el.evts.push(evtHandler);
       el.hse = true;
   }
@@ -382,7 +445,7 @@ var   toString$1 = Object.prototype.toString;
   defProps(Component, {
       register: {
           value: function value(name, create) {
-              if (has(registered, name)) throw Error('Name already registered');
+              if (has$1(registered, name)) throw Error('Name already registered');
               // if (!isPlain(definitions))
               //     throw Error('Not valid definitions')
               if (!isFn(create)) throw Error('Not valid definitions');
@@ -412,7 +475,7 @@ var   toString$1 = Object.prototype.toString;
           var src = arguments[i];
           if (!src) continue;
           for (var key in src) {
-              if (has(src, key)) dest[key] = src[key];
+              if (has$1(src, key)) dest[key] = src[key];
           }
       }
       return dest;
@@ -433,7 +496,7 @@ var   toString$1 = Object.prototype.toString;
           var src = arguments[i];
           if (!src) continue;
           for (var key in src) {
-              if (has(src, key)) {
+              if (has$1(src, key)) {
                   if (propsToCopy.indexOf(key) === -1) continue;
                   var val = src[key];
                   dest[key] = val;
@@ -452,15 +515,15 @@ var   toString$1 = Object.prototype.toString;
           var src = arguments[i];
           if (!src) continue;
           for (var key in src) {
-              if (has(src, key)) {
+              if (has$1(src, key)) {
                   var val = src[key];
                   if (isArray(dest)) {
                       for (var j = 0; j < dest.length; j++) {
                           var destMem = dest[j];
-                          if (!has(destMem, key)) destMem[key] = val;
+                          if (!has$1(destMem, key)) destMem[key] = val;
                       }
                   } else {
-                      if (!has(dest, key)) dest[key] = val;
+                      if (!has$1(dest, key)) dest[key] = val;
                   }
               }
           }
@@ -473,19 +536,19 @@ var   toString$1 = Object.prototype.toString;
       delete el.evts;
   }
   function removeAllEvts(el) {
-      if (has(el, 'evts')) removeEvt(el);
+      if (has$1(el, 'evts')) removeEvt(el);
       var hasEvtEls = queryAll(el, 'hse', true);
       hasEvtEls.forEach(removeEvt);
   }
   function removeRef(el) {
-      if (has(el, 'ref')) {
-          var refHolder = has(el, 'refScope') && el.refScope === 'parent' ? el.parentNode : el.root_;
+      if (has$1(el, 'ref')) {
+          var refHolder = has$1(el, 'refScope') && el.refScope === 'parent' ? el.parentNode : el.root_;
           // case when component is direct root of parent,
           // refs holder will be gone before this execution
-          if (has(refHolder, 'refs')) refHolder.refs.removeRef(el.ref);
+          if (has$1(refHolder, 'refs')) refHolder.refs.removeRef(el.ref);
           return;
       }
-      if (has(el, 'directRef')) {
+      if (has$1(el, 'directRef')) {
           var directRef = el.directRef;
           if (isStrOrNum(directRef) && directRef !== '') {
               delete el.root_[directRef];
@@ -493,13 +556,13 @@ var   toString$1 = Object.prototype.toString;
       }
   }
   function removeAllRefs(el) {
-      if (has(el, 'refs')) {
+      if (has$1(el, 'refs')) {
           el.refs.removeAll();
           delete el.refs;
       }
-      if (has(el, 'ref')) {
+      if (has$1(el, 'ref')) {
           removeRef(el);
-      } else if (has(el, 'directRef')) {
+      } else if (has$1(el, 'directRef')) {
           delete root[el.directRef];
       }
       var hasRefEls = queryAll(el, 'hsr', true);
@@ -560,7 +623,7 @@ var   toString$1 = Object.prototype.toString;
               var obsProp = tplOpts.observeProp,
                   tplOpts = assignOnly(createDict({ parent: parent, groupKey: groupKey }), tplOpts, 'tplFn,scope,for,root,observeProp,alwaysIterate'),
                   val = tplOpts.for,
-                  alreadyRegistered = has(this, obsProp);
+                  alreadyRegistered = has$1(this, obsProp);
               if (alreadyRegistered) {
                   this.__tpl[obsProp].push(tplOpts);
               } else {
@@ -745,7 +808,7 @@ var   toString$1 = Object.prototype.toString;
   });
 
   function setObserver(el, tplOpts, groupKey, root) {
-      if (!has(root, 'observe')) root.observe = new Observer(root);
+      if (!has$1(root, 'observe')) root.observe = new Observer(root);
       root.observe.add(el, tplOpts, groupKey, root);
       return root.observe;
   }
@@ -771,7 +834,7 @@ var   toString$1 = Object.prototype.toString;
           value: function value(_value) {
               if (isStrOrNum(_value)) {
                   _value = '' + _value;
-                  if (has(this, _value)) return delete this[_value];
+                  if (has$1(this, _value)) return delete this[_value];
               } else if (isFn(_value)) {
                   var refKeys = Object.keys(this),
                       successCount = 0;
@@ -798,13 +861,13 @@ var   toString$1 = Object.prototype.toString;
 
   function setReference(parent, el, root) {
       var ref, holder;
-      if (has(el, 'ref')) {
+      if (has$1(el, 'ref')) {
           ref = el.ref;
           if (ref === '' || !isStrOrNum(ref)) return;
-          var scope = has(el, 'refScope') && el.refScope === 'parent' ? parent : root;
-          if (!has(scope, 'refs')) scope.refs = new ReferenceHolder();
+          var scope = has$1(el, 'refScope') && el.refScope === 'parent' ? parent : root;
+          if (!has$1(scope, 'refs')) scope.refs = new ReferenceHolder();
           holder = scope.refs;
-      } else if (has(el, 'directRef')) {
+      } else if (has$1(el, 'directRef')) {
           ref = el.directRef;
           if (ref === '' || !isStrOrNum(ref)) return;
           holder = root;
@@ -878,8 +941,8 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
   function getChildrenConfigs(el) {
       var elSetups = el.setups;
       if (!elSetups) return null;
-      if (has(elSetups, 'items')) return elSetups.items;
-      if (has(elSetups, 'children')) return elSetups.children;
+      if (has$1(elSetups, 'items')) return elSetups.items;
+      if (has$1(elSetups, 'children')) return elSetups.children;
       return null;
   }
   /**
@@ -893,7 +956,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
           evtLen = events.length,
           elStyle = el.style;
       for (var key in defs) {
-          if (has(defs, key)) {
+          if (has$1(defs, key)) {
               var val = defs[key],
                   keyIdx = allChecks.indexOf(key);
               if (keyIdx == -1) el[key] = val;else {
@@ -902,7 +965,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
                   } else if (keyIdx < disRange) {
                       elStyle[key] = val;
                   } else if (keyIdx < shareRange) {
-                      if (!has(configs, 'defaults')) {
+                      if (!has$1(configs, 'defaults')) {
                           defProp(configs, 'defaults', { value: createDict() });
                       }
                       assign(configs.defaults, val);
@@ -920,7 +983,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
                       elSetups[key] = val;
                   } else if (keyIdx < xtraRange) {
                       if (!val) continue;
-                      if (!has(elSetups, 'cls')) {
+                      if (!has$1(elSetups, 'cls')) {
                           elSetups.cls = '';
                       }
                       elSetups.cls += val + ' ';
@@ -938,7 +1001,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
    */
   function setAttrs(el) {
       var elSetups = el.setups;
-      if (!elSetups || !has(elSetups, 'attrs')) return;
+      if (!elSetups || !has$1(elSetups, 'attrs')) return;
       each(elSetups.attrs, function (value, attrName) {
           el.setAttribute(c2d(attrName), value);
       });
@@ -948,11 +1011,11 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
    */
   function setStyles(el) {
       var elSetups = el.setups;
-      if (!elSetups || !has(elSetups, 'style')) return;
+      if (!elSetups || !has$1(elSetups, 'style')) return;
       var elStyle = el.style,
           styles = elSetups.style;
       for (var s in styles) {
-          if (has(styles, s)) {
+          if (has$1(styles, s)) {
               var styleVal = styles[s];
               if (pxChecks.indexOf(s) !== -1) elStyle[s] = isNaN(styleVal) ? styleVal : styleVal + 'px';else elStyle[s] = styleVal;
           }
@@ -964,7 +1027,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
    */
   function setEvents(el, root) {
       var elSetups = el.setups;
-      if (!elSetups || !has(elSetups, '__events')) return;
+      if (!elSetups || !has$1(elSetups, '__events')) return;
       for (var i = 0, elEvents = elSetups.__events, len = elEvents.length; i < len; i++) {
           var evtArgs = elEvents[i];
           attachEvent(el, evtArgs, root);
@@ -976,12 +1039,12 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
    */
   function setCls(el) {
       var elSetups = el.setups;
-      if (!elSetups || !has(elSetups, 'cls') || !elSetups.cls) return;
+      if (!elSetups || !has$1(elSetups, 'cls') || !elSetups.cls) return;
       el.className = elSetups.cls.trim();
   }
   function callCreated(el, root) {
       var elSetups = el.setups;
-      if (!elSetups || !has(elSetups, 'created')) return;
+      if (!elSetups || !has$1(elSetups, 'created')) return;
       if (isFn(elSetups.created)) elSetups.created.call(root, el, root);
   }
   /**
@@ -989,8 +1052,8 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
    * @returns {Element}
    */
   function createChildren(defs) {
-      if (has(defs, 'if') && !toBool(defs.if)) return null;
-      var tag = has(defs, 'tag') ? defs.tag : 'div',
+      if (has$1(defs, 'if') && !toBool(defs.if)) return null;
+      var tag = has$1(defs, 'tag') ? defs.tag : 'div',
           el = document.createElement(tag);
       createSetupsHolder(el);
       setDefs(el, defs);
@@ -1023,7 +1086,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
       if (child === null || typeof child === 'undefined') return;
       setReference(parent, child, root);
       insertBefore(parent, child, stop);
-      if (has(child, 'd__isCmp')) {
+      if (has$1(child, 'd__isCmp')) {
           child.root_ = root;
           return;
       }
@@ -1045,7 +1108,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
           return null;
       }
       if (isPlain(input)) {
-          if (has(input, 'ctype')) child = createComponent(input);else child = object2children(el, input, root);
+          if (has$1(input, 'ctype')) child = createComponent(input);else child = object2children(el, input, root);
       } else if (isStrOrNum(input)) {
           child = document.createTextNode(input);
       } else if (isDom(input)) {
@@ -1063,14 +1126,14 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
   function for2children(el, forOpts, groupKey, root, stop) {
       var val = forOpts.for;
       if (!val) return;
-      var data = has(forOpts, 'root') ? val[forOpts.root] : val,
+      var data = has$1(forOpts, 'root') ? val[forOpts.root] : val,
           fn = forOpts.tplFn,
           children,
           fnResult,
           child;
       if (data && typeof fn === 'function') {
           var thisArg = root;
-          if (has(forOpts, 'scope')) {
+          if (has$1(forOpts, 'scope')) {
               var scope = opts.scope;
               thisArg = scope === 'root' ? root : scope === 'parent' ? parent : scope;
           }
@@ -1107,7 +1170,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
    */
   function setChildrenInFor(el, tplOpts, root) {
       var groupKey;
-      if (has(tplOpts, 'observeProp')) {
+      if (has$1(tplOpts, 'observeProp')) {
           var obsProp = tplOpts.observeProp,
               groupKey = specialKey++;
           if (obsProp && isStrOrNum(obsProp) && obsProp !== '__owner') {
@@ -1125,12 +1188,12 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
       if (!children) return;
       var child;
       if (isPlain(children)) {
-          if (has(children, 'ctype')) {
+          if (has$1(children, 'ctype')) {
               child = createComponent(children);
               appendChild(el, child, root);
               return;
           }
-          if (has(children, 'for')) {
+          if (has$1(children, 'for')) {
               setChildrenInFor(el, children, root);
           } else {
               child = object2children(el, children, root);
@@ -1177,7 +1240,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
    * @returns {Element}
    */
   function createElement(defs) {
-      var tag = has(defs, 'tag') ? defs.tag : 'div';
+      var tag = has$1(defs, 'tag') ? defs.tag : 'div';
       var el = document.createElement(tag);
       defProp(el, 'd__isCmp', { value: true });
       createSetupsHolder(el);
@@ -1188,12 +1251,12 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
       setCls(el);
       setRootChildren(el);
       var elSetups = el.setups;
-      if (has(elSetups, 'created') && isFn(elSetups.created)) {
+      if (has$1(elSetups, 'created') && isFn(elSetups.created)) {
           elSetups.created.call(el, el, el);
       }
-      if (has(elSetups, 'parent')) {
+      if (has$1(elSetups, 'parent')) {
           elSetups.parent.appendChild(el);
-          if (has(elSetups, 'appended')) elSetups.appended.call(el);
+          if (has$1(elSetups, 'appended')) elSetups.appended.call(el);
       }
       return el;
   }
@@ -1206,10 +1269,10 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
       var ctype = defs.ctype;
       var definitions = Component.get(ctype).create(defs);
       // Carry the reference to the component
-      if (has(defs, 'ref')) {
+      if (has$1(defs, 'ref')) {
           definitions.ref = defs.ref;
-          if (has(defs, 'refScope')) definitions.refScope = defs.refScope;
-      } else if (has(defs, 'directRef')) definitions.directRef = defs.directRef;
+          if (has$1(defs, 'refScope')) definitions.refScope = defs.refScope;
+      } else if (has$1(defs, 'directRef')) definitions.directRef = defs.directRef;
       var comp = createElement(definitions);
       comp.ctype = ctype;
       return comp;
@@ -1220,7 +1283,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
    * @returns {Element}
    */
   function create$1(defs) {
-      if (has(defs, 'ctype')) {
+      if (has$1(defs, 'ctype')) {
           return createComponent(defs);
       } else {
           return createElement(defs);

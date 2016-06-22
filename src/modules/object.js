@@ -18,6 +18,7 @@ var defProps = Object.defineProperties,
             if (has(initValue, i))
                 dict[i] = initValue[i]
         return dict
-    }
+    },
+    getDesc = Object.getOwnPropertyDescriptor
 
-export { defProp, defProps, getKeys, getAllKeys, createDict, isPlain, has }
+export { defProp, defProps, getKeys, getAllKeys, getDesc, createDict, isPlain, has }
