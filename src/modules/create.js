@@ -439,6 +439,7 @@ function createComponent(defs) {
     else if (has(defs, 'directRef'))
         definitions.directRef = defs.directRef
     var comp = createElement(definitions)
+    comp.ctype = ctype
     return comp
 }
 /**
