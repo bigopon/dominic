@@ -221,6 +221,8 @@ function object2children(el, object, root) {
     setStyles(child)
     setEvents(child, root)
     setCls(child)
+    if (has(child, 'hide') && toBool(child.hide))
+        child.style.display = 'none'
     child.root_ = root
     return child
 }
@@ -235,6 +237,8 @@ function appendChild(parent, child, root, stop) {
     setReference(parent, child, root)
     insertBefore(parent, child, stop)
     if (has(child, 'd__isCmp')) {
+        if (has(child, 'hide'))
+            child.style.display = 'none'
         child.root_ = root
         return
     }
@@ -438,6 +442,8 @@ function createComponent(defs) {
     }
     else if (has(defs, 'directRef'))
         definitions.directRef = defs.directRef
+    if (has(defs, 'hide'))
+        definitions.hide = defs.hide
     var comp = createElement(definitions)
     comp.ctype = ctype
     return comp

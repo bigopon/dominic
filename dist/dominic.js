@@ -287,55 +287,38 @@ var   toString$1 = Object.prototype.toString;
       },
       remove: {
           value: function remove(handler) {
-              var idx = this.indexOf(handler);
-              if (idx !== -1) {
-                  handler.destroy();
-                  this.splice(idx, 1);
+              for (var i = 0; i < this.length; i++) {
+                  if (this[i] === handler) {
+                      this.splice(i, 1);
+                      handler.destroy();
+                      return;
+                  }
               }
           }
       }
   });
 
-  function makeHandler(_ref, thisArg) {
+  function makeNormalHandler(_ref, thisArg) {
       var type = _ref.type;
       var el = _ref.el;
       var callback = _ref.callback;
       var capture = _ref.capture;
-      var delegate = _ref.delegate;
-      var single = _ref.single;
       var count = _ref.count;
       var validator = _ref.validator;
+      var finishCount = _ref.finishCount;
 
       function handler(event) {
-          var isValid;
-          if (typeof delegate === 'string') {
-              if (el === event.target) return;
-              var match = walkupAndFindMatch(el, event.target, delegate);
-              if (!match) return;
-              if (typeof callback === 'function') {
-                  if (validator) {
-                      isValid = validator.call(thisArg, event, match, delegate);
-                      if (!isValid) return;
-                  }
-                  if (handler.count > -1) {
-                      if (handler.count--) callback.call(thisArg, event, match, delegate);
-                      if (!handler.count) el.evts.remove(handler);
-                  } else callback.call(thisArg, event, match, delegate);
+          if (validator && !validator.call(thisArg, event)) return;
+          if (count > -1) {
+              if (count--) callback.call(thisArg, event);
+              if (!count) {
+                  el.evts.remove(handler);
+                  if (finishCount) finishCount.call(thisArg, event);
               }
           } else {
-              if (typeof callback === 'function') {
-                  if (validator) {
-                      isValid = validator.call(thisArg, event);
-                      if (!isValid) return;
-                  }
-                  if (handler.count > -1) {
-                      if (handler.count--) callback.call(thisArg, event);
-                      if (!handler.count) el.evts.remove(handler);
-                  } else callback.call(thisArg, event);
-              }
+              callback.call(thisArg, event);
           }
       }
-      handler.count = count;
       handler.destroy = function () {
           return el.removeEventListener(type, handler, capture);
       };
@@ -343,48 +326,89 @@ var   toString$1 = Object.prototype.toString;
       return handler;
   }
 
-  function makeKeyHandler(_ref2, thisArg) {
+  function makeDelegateNormalHandler(_ref2, thisArg) {
       var type = _ref2.type;
       var el = _ref2.el;
       var callback = _ref2.callback;
       var capture = _ref2.capture;
       var delegate = _ref2.delegate;
-      var keys = _ref2.keys;
       var count = _ref2.count;
       var validator = _ref2.validator;
+      var finishCount = _ref2.finishCount;
 
       function handler(event) {
-          var isValid;
-          if (typeof delegate === 'string') {
-              if (el === event.target) return;
-              var match = walkupAndFindMatch(el, event.target, delegate);
-              if (!match) return;
-              if (keys && keys.indexOf(event.keyCode) === -1) return;
-              if (typeof callback === 'function') {
-                  if (validator) {
-                      isValid = validator.call(thisArg, event, match, delegate);
-                      if (!isValid) return;
-                  }
-                  if (handler.count > -1) {
-                      if (handler.count--) callback.call(thisArg, event, match, delegate);
-                      if (!handler.count) el.evts.remove(handler);
-                  } else callback.call(thisArg, event, match, delegate);
+          if (el === event.target) return;
+          var match = walkupAndFindMatch(el, event.target, delegate);
+          if (!match) return;
+          if (validator && !validator.call(thisArg, event, match, delegate)) return;
+          if (count > -1) {
+              if (count--) callback.call(thisArg, event, match, delegate);
+              if (!count) {
+                  el.evts.remove(handler);
+                  if (finishCount) finishCount.call(thisArg, event, match, delegate);
               }
-          } else {
-              if (keys && keys.indexOf(event.keyCode) === -1) return;
-              if (typeof callback === 'function') {
-                  if (validator) {
-                      isValid = validator.call(thisArg, event);
-                      if (!isValid) return;
-                  }
-                  if (handler.count > -1) {
-                      if (handler.count--) callback.call(thisArg, event);
-                      if (!handler.count) el.evts.remove(handler);
-                  } else callback.call(thisArg, event);
-              }
-          }
+          } else callback.call(thisArg, event, match, delegate);
       }
-      handler.count = count;
+      handler.destroy = function () {
+          return el.removeEventListener(type, handler, capture);
+      };
+      el.addEventListener(type, handler, capture);
+      return handler;
+  }
+
+  function makeNormalKeyHandler(_ref3, thisArg) {
+      var type = _ref3.type;
+      var el = _ref3.el;
+      var callback = _ref3.callback;
+      var capture = _ref3.capture;
+      var keys = _ref3.keys;
+      var count = _ref3.count;
+      var validator = _ref3.validator;
+      var finishCount = _ref3.finishCount;
+
+      function handler(event) {
+          if (keys && keys.indexOf(event.keyCode) === -1) return;
+          if (validator && !validator.call(thisArg, event)) return;
+          if (count > -1) {
+              if (count--) callback.call(thisArg, event);
+              if (!count) {
+                  el.evts.remove(handler);
+                  if (finishCount) finishCount.call(thisArg, event);
+              }
+          } else callback.call(thisArg, event);
+      }
+      handler.destroy = function () {
+          return el.removeEventListener(type, handler, capture);
+      };
+      el.addEventListener(type, handler, capture);
+      return handler;
+  }
+
+  function makeDelegateKeyHandler(_ref4, thisArg) {
+      var type = _ref4.type;
+      var el = _ref4.el;
+      var callback = _ref4.callback;
+      var capture = _ref4.capture;
+      var delegate = _ref4.delegate;
+      var keys = _ref4.keys;
+      var count = _ref4.count;
+      var validator = _ref4.validator;
+      var finishCount = _ref4.finishCount;
+
+      function handler(event) {
+          if (el === event.target) return;
+          var match = walkupAndFindMatch(el, event.target, delegate);
+          if (!match) return;
+          if (keys && keys.indexOf(event.keyCode) === -1) return;
+          if (validator && !validator.call(thisArg, event, match, delegate)) return;
+          if (count > -1) {
+              if (count--) callback.call(thisArg, event, match, delegate);
+              if (!count) {
+                  el.evts.remove(handler);
+                  if (finishCount) finishCount.call(thisArg, event, match, delegate);
+              }
+          } else callback.call(thisArg, event, match, delegate);
+      }
       handler.destroy = function () {
           return el.removeEventListener(type, handler, capture);
       };
@@ -402,9 +426,8 @@ var   toString$1 = Object.prototype.toString;
       if (!type) throw new Error('No event type specified');
       var handler = evtArgs.handler,
           handlerRegType = typeof handler === 'undefined' ? 'undefined' : _typeof(handler),
-          realHandler;
-      root = root || el;
-      var scope = evtArgs.scope === 'root' ? root : has$1(evtArgs, 'scope') ? evtArgs.scope : el;
+          realHandler,
+          scope = evtArgs.scope === 'root' ? root : has$1(evtArgs, 'scope') ? evtArgs.scope : el;
 
       if (handlerRegType === 'function') realHandler = handler;else if (handlerRegType === 'string') realHandler = scope[handler];
 
@@ -418,21 +441,35 @@ var   toString$1 = Object.prototype.toString;
           isFocusEvt = focusEvts.indexOf(type) !== -1,
           count = has$1(evtArgs, 'count') && isNum(evtArgs.count) ? evtArgs.count : -1,
           single = evtArgs.single === true,
-          evtHandler;
-      var validatorType = _typeof(evtArgs.validator),
-          validator = null;
-      if (validatorType === 'string') validator = scope[evtArgs.validator];else if (validatorType === 'function') validator = evtArgs.validator;
+          evtHandler,
+          validator = null,
+          finishCount = null;
+      if (has$1(evtArgs, 'validator')) {
+          var v = evtArgs.validator,
+              validatorType = typeof v === 'undefined' ? 'undefined' : _typeof(v);
+          // Validator handler check
+          if (validatorType === 'string') validator = scope[v];else if (validatorType === 'function') validator = v;
+          if (typeof validator !== 'function') validator = null;
+      }
+      if (has$1(evtArgs, 'finishCount')) {
+          var fC = evtArgs.finishCount,
+              finishCountType = typeof fC === 'undefined' ? 'undefined' : _typeof(fC);
+          // Finish count handler check
+          if (finishCountType === 'string') finishCount = scope[fC];else if (finishCountType === 'function') finishCount = fC;
+          if (typeof finishCount !== 'function') finishCount = null;
+      }
+
       if (isKeyEvt) {
           var keys = null;
           if (has$1(evtArgs, 'key')) {
               if (typeof evtArgs.key === 'number') keys = [evtArgs.key];else if (are(evtArgs.key, 'number')) keys = evtArgs.key;
           }
-          evtHandler = makeKeyHandler({ type: type, el: el, callback: realHandler, capture: capture, delegate: delegate, keys: keys, single: single, count: count, validator: validator }, scope);
+          if (!delegate || typeof delegate !== 'string') evtHandler = makeNormalKeyHandler({ type: type, el: el, callback: realHandler, capture: capture, keys: keys, count: count, validator: validator, finishCount: finishCount }, scope);else evtHandler = makeDelegateKeyHandler({ type: type, el: el, callback: realHandler, capture: capture, delegate: delegate, keys: keys, count: count, validator: validator, finishCount: finishCount }, scope);
       } else {
           if (isFocusEvt && delegate) {
               capture = true;
           }
-          evtHandler = makeHandler({ type: type, el: el, callback: realHandler, capture: capture, delegate: delegate, single: single, count: count, validator: validator }, scope);
+          if (!delegate || typeof delegate !== 'string') evtHandler = makeNormalHandler({ type: type, el: el, callback: realHandler, capture: capture, count: count, validator: validator, finishCount: finishCount }, scope);else evtHandler = makeDelegateNormalHandler({ type: type, el: el, callback: realHandler, capture: capture, delegate: delegate, count: count, validator: validator, finishCount: finishCount }, scope);
       }
 
       if (!has$1(el, 'evts')) el.evts = new EventHolder();
@@ -1073,6 +1110,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
       setStyles(child);
       setEvents(child, root);
       setCls(child);
+      if (has$1(child, 'hide') && toBool(child.hide)) child.style.display = 'none';
       child.root_ = root;
       return child;
   }
@@ -1087,6 +1125,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
       setReference(parent, child, root);
       insertBefore(parent, child, stop);
       if (has$1(child, 'd__isCmp')) {
+          if (has$1(child, 'hide')) child.style.display = 'none';
           child.root_ = root;
           return;
       }
@@ -1273,6 +1312,7 @@ var   keyEvts$1 = ['keydown', 'keypress', 'keyup'];
           definitions.ref = defs.ref;
           if (has$1(defs, 'refScope')) definitions.refScope = defs.refScope;
       } else if (has$1(defs, 'directRef')) definitions.directRef = defs.directRef;
+      if (has$1(defs, 'hide')) definitions.hide = defs.hide;
       var comp = createElement(definitions);
       comp.ctype = ctype;
       return comp;

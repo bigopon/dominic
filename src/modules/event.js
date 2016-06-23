@@ -34,61 +34,39 @@ defProps(EventHolder.prototype, {
     removeAll: {
         value: function removeAll() {
             for (var i = 0; i < this.length; i++)
-                    this[i].destroy()
-                this.length = 0
+                this[i].destroy()
+            this.length = 0
         }
     },
     remove: {
         value: function remove(handler) {
-            var idx = this.indexOf(handler)
-            if (idx !== -1) {
-                handler.destroy()
-                this.splice(idx, 1)
-            }
+            for (var i = 0; i < this.length; i++)
+                if (this[i] === handler) {
+                    this.splice(i, 1)
+                    handler.destroy()
+                    return
+                }
         }
     }
 })
 
-function makeHandler({ type, el, callback, capture, delegate, single, count, validator }, thisArg) {
+function makeNormalHandler({ type, el, callback, capture, count, validator, finishCount }, thisArg) {
     function handler(event) {
-        var isValid
-        if (typeof delegate === 'string') {
-            if (el === event.target) return
-            var match = walkupAndFindMatch(el, event.target, delegate)
-            if (!match) return
-            if (typeof callback === 'function') {
-                if (validator) {
-                    isValid = validator.call(thisArg, event, match, delegate)
-                    if (!isValid) return
-                }
-                if (handler.count > -1) {
-                    if (handler.count--)
-                        callback.call(thisArg, event, match, delegate)
-                    if (!handler.count)
-                        el.evts.remove(handler)
-                }
-                else
-                    callback.call(thisArg, event, match, delegate)
+        if (validator && !validator.call(thisArg, event))
+            return
+        if (count > -1) {
+            if (count--)
+                callback.call(thisArg, event)
+            if (!count) {
+                el.evts.remove(handler)
+                if (finishCount)
+                    finishCount.call(thisArg, event)
             }
         }
         else {
-            if (typeof callback === 'function') {
-                if (validator) {
-                    isValid = validator.call(thisArg, event)
-                    if (!isValid) return
-                }
-                if (handler.count > -1) {
-                    if (handler.count--)
-                        callback.call(thisArg, event)
-                    if (!handler.count)
-                        el.evts.remove(handler)
-                }
-                else
-                    callback.call(thisArg, event)
-            }
+            callback.call(thisArg, event)
         }
     }
-    handler.count = count
     handler.destroy = function() {
         return el.removeEventListener(type, handler, capture)
     }
@@ -96,49 +74,81 @@ function makeHandler({ type, el, callback, capture, delegate, single, count, val
     return handler
 }
 
-function makeKeyHandler({ type, el, callback, capture, delegate, keys, count, validator }, thisArg) {
+function makeDelegateNormalHandler({ type, el, callback, capture, delegate, count, validator, finishCount }, thisArg) {
     function handler(event) {
-        var isValid
-        if (typeof delegate === 'string') {
-            if (el === event.target) return
-            var match = walkupAndFindMatch(el, event.target, delegate)
-            if (!match) return
-            if (keys && keys.indexOf(event.keyCode) === -1) return
-            if (typeof callback === 'function') {
-                if (validator) {
-                    isValid = validator.call(thisArg, event, match, delegate)
-                    if (!isValid) return
-                }
-                if (handler.count > -1) {
-                    if (handler.count--)
-                        callback.call(thisArg, event, match, delegate)
-                    if (!handler.count)
-                        el.evts.remove(handler)
-                }
-                else
-                    callback.call(thisArg, event, match, delegate)
+        if (el === event.target) return
+        var match = walkupAndFindMatch(el, event.target, delegate)
+        if (!match)
+            return
+        if (validator && !validator.call(thisArg, event, match, delegate))
+            return
+        if (count > -1) {
+            if (count--)
+                callback.call(thisArg, event, match, delegate)
+            if (!count) {
+                el.evts.remove(handler)
+                if (finishCount)
+                    finishCount.call(thisArg, event, match, delegate)
             }
         }
-        else {
-            if (keys && keys.indexOf(event.keyCode) === -1) return
-            if (typeof callback === 'function') {
-                if (validator) {
-                    isValid = validator.call(thisArg, event)
-                    if (!isValid) return
-                }
-                if (handler.count > -1) {
-                    if (handler.count--)
-                        callback.call(thisArg, event)
-                    if (!handler.count)
-                        el.evts.remove(handler)
-                }
-                else
-                    callback.call(thisArg, event)
-            }
-        }
+        else
+            callback.call(thisArg, event, match, delegate)
     }
-    handler.count = count
-    handler.destroy = function () {
+    handler.destroy = function() {
+        return el.removeEventListener(type, handler, capture)
+    }
+    el.addEventListener(type, handler, capture)
+    return handler
+}
+
+function makeNormalKeyHandler({ type, el, callback, capture, keys, count, validator, finishCount }, thisArg) {
+    function handler(event) {
+        if (keys && keys.indexOf(event.keyCode) === -1)
+            return
+        if (validator && !validator.call(thisArg, event))
+            return
+        if (count > -1) {
+            if (count--)
+                callback.call(thisArg, event)
+            if (!count) {
+                el.evts.remove(handler)
+                if (finishCount)
+                    finishCount.call(thisArg, event)
+            }
+        }
+        else
+            callback.call(thisArg, event)
+    }
+    handler.destroy = function() {
+        return el.removeEventListener(type, handler, capture)
+    }
+    el.addEventListener(type, handler, capture)
+    return handler
+}
+
+function makeDelegateKeyHandler({ type, el, callback, capture, delegate, keys, count, validator, finishCount }, thisArg) {
+    function handler(event) {
+        if (el === event.target) return
+        var match = walkupAndFindMatch(el, event.target, delegate)
+        if (!match)
+            return
+        if (keys && keys.indexOf(event.keyCode) === -1)
+            return
+        if (validator && !validator.call(thisArg, event, match, delegate))
+            return
+        if (count > -1) {
+            if (count--)
+                callback.call(thisArg, event, match, delegate)
+            if (!count) {
+                el.evts.remove(handler)
+                if (finishCount)
+                    finishCount.call(thisArg, event, match, delegate)
+            }
+        }
+        else
+            callback.call(thisArg, event, match, delegate)
+    }
+    handler.destroy = function() {
         return el.removeEventListener(type, handler, capture)
     }
     el.addEventListener(type, handler, capture)
@@ -156,11 +166,10 @@ function attachEvent(el, evtArgs, root) {
         throw new Error('No event type specified')
     var handler = evtArgs.handler,
         handlerRegType = typeof handler,
-        realHandler
-    root = root || el
-    var scope = evtArgs.scope === 'root' ?
-        root :
-        (has(evtArgs, 'scope') ? evtArgs.scope : el)
+        realHandler,
+        scope = evtArgs.scope === 'root' ?
+            root :
+            (has(evtArgs, 'scope') ? evtArgs.scope : el)
 
     if (handlerRegType === 'function')
         realHandler = handler
@@ -177,13 +186,32 @@ function attachEvent(el, evtArgs, root) {
         isFocusEvt = focusEvts.indexOf(type) !== -1,
         count = has(evtArgs, 'count') && isNum(evtArgs.count) ? evtArgs.count : -1,
         single = evtArgs.single === true,
-        evtHandler
-    var validatorType = typeof evtArgs.validator,
-        validator = null
-    if (validatorType === 'string')
-        validator = scope[evtArgs.validator]
-    else if (validatorType === 'function')
-        validator = evtArgs.validator
+        evtHandler,
+        validator = null,
+        finishCount = null
+    if (has(evtArgs, 'validator')) {
+        var v = evtArgs.validator,
+            validatorType = typeof v
+        // Validator handler check
+        if (validatorType === 'string')
+            validator = scope[v]
+        else if (validatorType === 'function')
+            validator = v
+        if (typeof validator !== 'function')
+            validator = null
+    }
+    if (has(evtArgs, 'finishCount')) {
+        var fC = evtArgs.finishCount,
+            finishCountType = typeof fC
+        // Finish count handler check
+        if (finishCountType === 'string')
+            finishCount = scope[fC]
+        else if (finishCountType === 'function')
+            finishCount = fC
+        if (typeof finishCount !== 'function')
+            finishCount = null
+    }
+
     if (isKeyEvt) {
         var keys = null
         if (has(evtArgs, 'key')) {
@@ -192,13 +220,19 @@ function attachEvent(el, evtArgs, root) {
             else if (are(evtArgs.key, 'number'))
                 keys = evtArgs.key
         }
-        evtHandler = makeKeyHandler({ type, el, callback: realHandler, capture, delegate, keys, single, count, validator }, scope)
+        if (!delegate || typeof delegate !== 'string')
+            evtHandler = makeNormalKeyHandler({ type, el, callback: realHandler, capture, keys, count, validator, finishCount }, scope)
+        else
+            evtHandler = makeDelegateKeyHandler({ type, el, callback: realHandler, capture, delegate, keys, count, validator, finishCount }, scope)
     }
     else {
         if (isFocusEvt && delegate) {
             capture = true
         }
-        evtHandler = makeHandler({ type, el, callback: realHandler, capture, delegate, single, count, validator }, scope)
+        if (!delegate || typeof delegate !== 'string')
+            evtHandler = makeNormalHandler({ type, el, callback: realHandler, capture, count, validator, finishCount }, scope)
+        else
+            evtHandler = makeDelegateNormalHandler({ type, el, callback: realHandler, capture, delegate, count, validator, finishCount }, scope)
     }
         
     if (!has(el, 'evts'))

@@ -1,6 +1,6 @@
 ## Dominic
 Helper to quickly build up dom in javascript object format
-* v.0.1.42 contains breaking changes. See [changelog](https://github.com/bigopon/dominic/blob/master/CHANGELOG.md "v.0.1.42 changelog")
+* v.0.1.42 contains breaking changes. See [changelog](https://github.com/bigopon/dominic/blob/master/CHANGELOG.md "changelog")
 
 Basic feature list:
 
@@ -12,7 +12,7 @@ Basic feature list:
  * Components
  * ~~Server side render to Html (with helper, see API)~~ (temporarily)
 
-* Version: 0.1.46
+* Version: 0.1.47
 * Outline
   - [1. Basic](#basic1)
   - [2. Div all the elements](#basic2)
@@ -454,10 +454,10 @@ var root = Dominic.create({
 })
 ```
 
-#### Events 4: Event counter and validator <a id="event4"></a>
+#### Events 4: Event `counter`, `finishCount` and `validator` <a id="event4"></a>
 ```javascript
-// This example second input only let user navigate by arrow key
-// if user has already 'sayHelo' with a validated name
+// In this example, second input only let user navigate by arrow key if
+// user has already 'sayHelo' with a validated name
 var root = Dominic.create({
     cls: 'root',
     parent: document.body,
@@ -482,6 +482,9 @@ var root = Dominic.create({
                 //     parameters with handler (event, match, delegate)
                 validator: function(e) {
                     return e.target.value
+                },
+                finishCount: function DoSomethingAfterInputName(e) {
+                    // hide input maybe
                 }
             }
         },
@@ -503,6 +506,79 @@ var root = Dominic.create({
     },
     isAllowedToGo: function() {
         return this.name
+    }
+})
+```
+
+```javascript
+// Bigger example to show the purpose of [finishCount] together with [count] and [validator]
+var root = Dominic.create({
+    cls: 'root',
+    parent: document.body,
+    point: 0,
+    items: [
+        { tag: 'input', placeholder: 'Choose a name to start the game...',
+            display: 'block',
+            width: 300,
+            keydown: { scope: 'root', handler: 'sayHelo', key: 13,
+                count: 1,
+                validator: function(e) {
+                    return e.target.value
+                },
+                // start the game after input name
+                finishCount: function hideInput(e) {
+                    e.target.style.display = 'none'
+                    this.guessInput.disabled = false
+                    this.guessInput.focus()
+                }
+            }
+        },
+        { tag: 'input',
+            cls: 'guess-name',
+            // use directRef for faster reference
+            directRef: 'guessInput',
+            placeholder: 'Guess the name 3 times...',
+            // dont let user guess when they haven't entered name
+            disabled: true
+        }
+    ],
+    keydown: {
+        delegate: '.guess-name',
+        // only execute handler 3 times
+        count: 3,
+        // put a validator to avoid user mistakenly guess empty name
+        // or user haven't submitted a name to start the game
+        validator: 'validateGuess',
+        // call this on every guess
+        handler: 'onGuess',
+        // if finished 3 tries, call this
+        finishCount: 'gameFinish',
+        // only guess when hit enter key
+        key: 13
+    },
+    sayHelo: function (e) {
+        this.name = e.target.value
+        console.log('helo', e.target.value, '\nLets start')
+    },
+    validateGuess: function(e, match) {
+        // e.target === this.guessInput === match
+        return match.value
+    },
+    onGuess: function(e, match) {
+        console.log('Your guess:', match.value)
+        var point = match.value === this.name ? 1 : 0
+        console.log('You got:', point, 'point')
+        this.point += point
+        // empty input to guess new round
+        match.value = ''
+    },
+    gameFinish: function(e, match) {
+        console.log('----\nFinish.\nYour points:', this.point)
+        if (this.point < 3)
+            return console.info('Game over. Did you type in the name?')
+        console.info('You won!!!')
+        // disable to make it look like a game
+        match.disabled = true
     }
 })
 ```
